@@ -1,4 +1,4 @@
-import encodec
+from encodec import EncodecModel
 import torch.nn as nn
 import torch
 import torch.nn.functional as F
@@ -7,7 +7,7 @@ class WrappedEncodec(nn.Module):
 
     def __init__(self,params_file=None) -> None:
         super().__init__()
-        self.model = encodec.EncodecModel.encodec_model_24khz()
+        self.model = EncodecModel.encodec_model_24khz()
         self.sr = 24000
         self.param = False
         if params_file is not None:
@@ -47,9 +47,9 @@ class WrappedEncodec(nn.Module):
 if __name__ == "__main__":
     encodec = WrappedEncodec()
 
-    x = torch.randn(1,1,24000)
+    x = torch.randn(16,1,48000)
 
-    z = encodec.encode(x)[0][0]
+    z = encodec.encode(x)
     x_rec = encodec.decode(z) #x_rec = encodec(x)
 
     print(z.shape,x_rec.shape)
