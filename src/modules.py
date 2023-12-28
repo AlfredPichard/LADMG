@@ -22,15 +22,157 @@ class Positional_Encoding(nn.Module):
 
 class AdaGN(nn.module):
 
-    def __init__(self, n_channels, n_groups, time_emb_dim):
+    def __init__(self, in_channels, time_emb_dim, n_groups=None):
         super(AdaGN, self).__init__()
-        self.groupnorm = nn.GroupNorm(n_groups, n_channels)
-        self.lin_time_proj = nn.Linear(time_emb_dim, 2)
+        if n_groups is None:
+            n_groups = in_channels
+        self.groupnorm = nn.GroupNorm(n_groups, in_channels, affine=True, eps=1e-5)
+        self.lin_time_proj = nn.Linear(time_emb_dim, 2*in_channels)
+        self.in_channels = in_channels
 
     def forward(self, x, pos_enc):
-        y = self.lin_time_proj(pos_enc)
-        return y[:,:,0]*x + y[:,:,1]
+        '''
+        with: 
+            D = input dimension
+            C = in_channels
+            T = time_emb_dim
+            N = batch size
+
+        x : (N, C, D)
+        pos_enc : (N, T)
+        t : (N, T) --> (N, 2 * C, D)
+        t_a, t_b : (N, C, D)
+        return : (N, C, D)
+        '''
+        t = self.lin_time_proj(pos_enc).unsqueeze(2).repeat(1,1,x.shape[-1])
+        t_a, t_b = t[:,:self.in_channels,:], t[:,self.in_channels:,:]
+        return t_a*self.groupnorm(x) + t_b
     
+class ConvBlock(nn.module):
+
+    def __init__(self, in_channels, out_channels, time_emb_dim, n_groups=None, kernel_size_base2 = None):
+        super(ConvBlock, self).__init__()            
+        if not isinstance(kernel_size_base2,int) or not kernel_size_base2 > 0:
+            kernel_size_base2 = 1
+        kernel_size = 2**kernel_size_base2 + 1
+        padding = 2**(kernel_size_base2 - 1)
+        self.conv = nn.Conv1d(in_channels, out_channels, kernel_size, padding=padding)
+        self.norm = AdaGN(in_channels,time_emb_dim, n_groups=n_groups)
+        self.activation = nn.SELU()
+
+    def forward(self, x, pos_enc):
+        x = self.conv(x)
+        x = self.norm(x, pos_enc)
+        return self.activation(x) + x
+    
+class EncodeBlock(nn.module):
+
+    def __init__(self, in_channels, time_emb_dim, num_block = 2, out_channels=None, n_groups = None, kernel_size_base2 = None):
+        super(EncodeBlock, self).__init__()
+        if not isinstance(out_channels, int):
+            out_channels = 2 * in_channels
+        
+        blocks = []
+        blocks.append(ConvBlock(in_channels, out_channels, time_emb_dim, n_groups=n_groups, kernel_size_base2=kernel_size_base2))
+        for _ in range(1, num_block):
+            blocks.append(ConvBlock(out_channels, out_channels, time_emb_dim, n_groups=n_groups, kernel_size_base2=kernel_size_base2))
+
+        self.conv = nn.Sequential(blocks)
+        self.activation = nn.SELU()
+
+        if not isinstance(kernel_size_base2,int) or not kernel_size_base2 > 0:
+            kernel_size_base2 = 1
+        kernel_size = 2**kernel_size_base2 + 1
+        padding = 2**(kernel_size_base2 - 1)
+
+        self.encoder = nn.Conv1d(out_channels, out_channels, kernel_size, padding=padding, stride=2)
+
+        self.skip = None
+
+    def forward(self, x, pos_enc):
+        x = self.conv(x, pos_enc)
+        self.skip = x
+        return self.activation(self.encoder(x))
+    
+class DecodeBlock(nn.module):
+
+    def __init__(self, in_channels, time_emb_dim, num_block = 2, out_channels=None, n_groups = None, kernel_size_base2 = None):
+        super(DecodeBlock, self).__init__()
+        if not isinstance(out_channels, int):
+            out_channels = in_channels // 2
+        
+        blocks = []
+        blocks.append(ConvBlock(in_channels, out_channels, time_emb_dim, n_groups=n_groups, kernel_size_base2=kernel_size_base2))
+        for _ in range(1, num_block):
+            blocks.append(ConvBlock(out_channels, out_channels, time_emb_dim, n_groups=n_groups, kernel_size_base2=kernel_size_base2))
+
+        self.conv = nn.Sequential(blocks)
+        self.activation = nn.SELU()
+
+        if not isinstance(kernel_size_base2,int) or not kernel_size_base2 > 0:
+            kernel_size_base2 = 1
+        kernel_size = 2**kernel_size_base2 + 1
+        padding = 2**(kernel_size_base2 - 1)
+
+        self.decoder = nn.ConvTranspose1d(out_channels, out_channels, kernel_size, padding=padding, stride=2, output_padding=1)
+
+    def forward(self, x, pos_enc, skip):
+        x = torch.cat((skip, x), dim=-2)
+        x = self.conv(x, pos_enc)
+        return self.activation(self.decoder(x))
+    
+class BottomBlock(nn.module):
+
+    def __init__(self, in_channels, time_emb_dim, num_block = 2, out_channels=None, n_groups = None, kernel_size_base2 = None):
+        super(DecodeBlock, self).__init__()
+        if not isinstance(out_channels, int):
+            out_channels = in_channels * 2
+        
+        blocks = []
+        blocks.append(ConvBlock(in_channels, out_channels, time_emb_dim, n_groups=n_groups, kernel_size_base2=kernel_size_base2))
+        for _ in range(1, num_block):
+            blocks.append(ConvBlock(out_channels, out_channels, time_emb_dim, n_groups=n_groups, kernel_size_base2=kernel_size_base2))
+
+        self.conv = nn.Sequential(blocks)
+        self.activation = nn.SELU()
+
+        if not isinstance(kernel_size_base2,int) or not kernel_size_base2 > 0:
+            kernel_size_base2 = 1
+        kernel_size = 2**kernel_size_base2 + 1
+        padding = 2**(kernel_size_base2 - 1)
+
+        self.decoder = nn.ConvTranspose1d(out_channels, out_channels, kernel_size, padding=padding, stride=2, output_padding=1)
+
+    def forward(self, x, pos_enc):
+        x = self.conv(x, pos_enc)
+        return self.activation(self.decoder(x))
+    
+class UNet(nn.module):
+
+    def __init__(self, channels, time_emb_dim = 16, start_channels_base2 = 6, n_layers = 5, n_groups = None, kernel_size_base2 = None):
+        self.n_layers = n_layers
+        self.encode = []
+        self.decode = []
+        self.encode.append(EncodeBlock(channels, time_emb_dim, out_channels = 2**start_channels_base2, n_groups=n_groups, kernel_size_base2=kernel_size_base2))
+        self.decode.append(DecodeBlock(2**(start_channels_base2 + 1), time_emb_dim, n_groups=n_groups, kernel_size_base2=kernel_size_base2))
+        for i in range(n_layers - 2):
+            self.encode.append(EncodeBlock(2**(start_channels_base2 + i + 1), time_emb_dim, n_groups=n_groups, kernel_size_base2=kernel_size_base2))
+            self.decode.append(DecodeBlock(2**(start_channels_base2 + i), time_emb_dim, n_groups=n_groups, kernel_size_base2=kernel_size_base2))
+        self.bottom = BottomBlock(2**(start_channels_base2 + n_layers - 2), time_emb_dim, n_groups=n_groups, kernel_size_base2=kernel_size_base2)
+
+        self.last_conv = nn.Conv1d(2**(start_channels_base2), channels, 1)
+        self.pos_encoding = Positional_Encoding(time_emb_dim)
+        
+    def forward(self, x, t):
+        pos_enc = self.pos_encoding(t)
+        for i in range(self.n_layers - 1):
+            x = self.encode[i](x, pos_enc)
+        x = self.bottom(x, pos_enc)
+        for i in range(self.n_layers - 2, -1, -1):
+            x = self.decode[i](x, pos_enc, self.encode[i].skip)
+        return self.last_conv(x)
+
+'''
 class UNet(nn.module):
 
     def __init__(self, latent_dim, pos_enc_dim, n_channels = 1, n_groups = 6):
@@ -137,3 +279,4 @@ class UNet(nn.module):
         x = self.conv1x1(x)
 
         return x
+'''
