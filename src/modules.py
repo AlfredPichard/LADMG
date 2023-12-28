@@ -20,7 +20,7 @@ class Positional_Encoding(nn.Module):
         pos_enc = torch.cat(alpha)
         return torch.transpose(pos_enc,0,1)
 
-class AdaGN(nn.module):
+class AdaGN(nn.Module):
 
     def __init__(self, in_channels, time_emb_dim, n_groups=None):
         super(AdaGN, self).__init__()
@@ -48,7 +48,7 @@ class AdaGN(nn.module):
         t_a, t_b = t[:,:self.in_channels,:], t[:,self.in_channels:,:]
         return t_a*self.groupnorm(x) + t_b
     
-class ConvBlock(nn.module):
+class ConvBlock(nn.Module):
 
     def __init__(self, in_channels, out_channels, time_emb_dim, n_groups=None, kernel_size_base2 = None):
         super(ConvBlock, self).__init__()            
@@ -57,28 +57,27 @@ class ConvBlock(nn.module):
         kernel_size = 2**kernel_size_base2 + 1
         padding = 2**(kernel_size_base2 - 1)
         self.conv = nn.Conv1d(in_channels, out_channels, kernel_size, padding=padding)
-        self.norm = AdaGN(in_channels,time_emb_dim, n_groups=n_groups)
-        self.activation = nn.SELU()
+        self.norm = AdaGN(out_channels,time_emb_dim, n_groups=n_groups)
+        self.activation = nn.SiLU()
 
     def forward(self, x, pos_enc):
         x = self.conv(x)
         x = self.norm(x, pos_enc)
         return self.activation(x) + x
     
-class EncodeBlock(nn.module):
+class EncodeBlock(nn.Module):
 
     def __init__(self, in_channels, time_emb_dim, num_block = 2, out_channels=None, n_groups = None, kernel_size_base2 = None):
         super(EncodeBlock, self).__init__()
         if not isinstance(out_channels, int):
             out_channels = 2 * in_channels
         
-        blocks = []
-        blocks.append(ConvBlock(in_channels, out_channels, time_emb_dim, n_groups=n_groups, kernel_size_base2=kernel_size_base2))
+        self.blocks = []
+        self.blocks.append(ConvBlock(in_channels, out_channels, time_emb_dim, n_groups=n_groups, kernel_size_base2=kernel_size_base2))
         for _ in range(1, num_block):
-            blocks.append(ConvBlock(out_channels, out_channels, time_emb_dim, n_groups=n_groups, kernel_size_base2=kernel_size_base2))
+            self.blocks.append(ConvBlock(out_channels, out_channels, time_emb_dim, n_groups=n_groups, kernel_size_base2=kernel_size_base2))
 
-        self.conv = nn.Sequential(blocks)
-        self.activation = nn.SELU()
+        self.activation = nn.SiLU()
 
         if not isinstance(kernel_size_base2,int) or not kernel_size_base2 > 0:
             kernel_size_base2 = 1
@@ -90,74 +89,97 @@ class EncodeBlock(nn.module):
         self.skip = None
 
     def forward(self, x, pos_enc):
-        x = self.conv(x, pos_enc)
+        for i in range(len(self.blocks)):
+            x = self.blocks[i](x, pos_enc)
         self.skip = x
         return self.activation(self.encoder(x))
     
-class DecodeBlock(nn.module):
+class DecodeBlock(nn.Module):
 
     def __init__(self, in_channels, time_emb_dim, num_block = 2, out_channels=None, n_groups = None, kernel_size_base2 = None):
         super(DecodeBlock, self).__init__()
         if not isinstance(out_channels, int):
             out_channels = in_channels // 2
         
-        blocks = []
-        blocks.append(ConvBlock(in_channels, out_channels, time_emb_dim, n_groups=n_groups, kernel_size_base2=kernel_size_base2))
+        self.blocks = []
+        self.blocks.append(ConvBlock(in_channels, out_channels, time_emb_dim, n_groups=n_groups, kernel_size_base2=kernel_size_base2))
         for _ in range(1, num_block):
-            blocks.append(ConvBlock(out_channels, out_channels, time_emb_dim, n_groups=n_groups, kernel_size_base2=kernel_size_base2))
+            self.blocks.append(ConvBlock(out_channels, out_channels, time_emb_dim, n_groups=n_groups, kernel_size_base2=kernel_size_base2))
 
-        self.conv = nn.Sequential(blocks)
-        self.activation = nn.SELU()
+        self.activation = nn.SiLU()
 
         if not isinstance(kernel_size_base2,int) or not kernel_size_base2 > 0:
             kernel_size_base2 = 1
         kernel_size = 2**kernel_size_base2 + 1
         padding = 2**(kernel_size_base2 - 1)
 
-        self.decoder = nn.ConvTranspose1d(out_channels, out_channels, kernel_size, padding=padding, stride=2, output_padding=1)
+        self.decoder = nn.ConvTranspose1d(out_channels, out_channels // 2, kernel_size, padding=padding, stride=2, output_padding=1)
 
     def forward(self, x, pos_enc, skip):
         x = torch.cat((skip, x), dim=-2)
-        x = self.conv(x, pos_enc)
+        for i in range(len(self.blocks)):
+            x = self.blocks[i](x, pos_enc)
         return self.activation(self.decoder(x))
     
-class BottomBlock(nn.module):
+class BottomBlock(nn.Module):
 
     def __init__(self, in_channels, time_emb_dim, num_block = 2, out_channels=None, n_groups = None, kernel_size_base2 = None):
-        super(DecodeBlock, self).__init__()
+        super(BottomBlock, self).__init__()
         if not isinstance(out_channels, int):
             out_channels = in_channels * 2
         
-        blocks = []
-        blocks.append(ConvBlock(in_channels, out_channels, time_emb_dim, n_groups=n_groups, kernel_size_base2=kernel_size_base2))
+        self.blocks = []
+        self.blocks.append(ConvBlock(in_channels, out_channels, time_emb_dim, n_groups=n_groups, kernel_size_base2=kernel_size_base2))
         for _ in range(1, num_block):
-            blocks.append(ConvBlock(out_channels, out_channels, time_emb_dim, n_groups=n_groups, kernel_size_base2=kernel_size_base2))
+            self.blocks.append(ConvBlock(out_channels, out_channels, time_emb_dim, n_groups=n_groups, kernel_size_base2=kernel_size_base2))
 
-        self.conv = nn.Sequential(blocks)
-        self.activation = nn.SELU()
+        self.activation = nn.SiLU()
 
         if not isinstance(kernel_size_base2,int) or not kernel_size_base2 > 0:
             kernel_size_base2 = 1
         kernel_size = 2**kernel_size_base2 + 1
         padding = 2**(kernel_size_base2 - 1)
 
-        self.decoder = nn.ConvTranspose1d(out_channels, out_channels, kernel_size, padding=padding, stride=2, output_padding=1)
+        self.decoder = nn.ConvTranspose1d(out_channels, out_channels // 2, kernel_size, padding=padding, stride=2, output_padding=1)
 
     def forward(self, x, pos_enc):
-        x = self.conv(x, pos_enc)
+        for i in range(len(self.blocks)):
+            x = self.blocks[i](x, pos_enc)
         return self.activation(self.decoder(x))
     
-class UNet(nn.module):
+class OutBlock(nn.Module):
 
-    def __init__(self, channels, time_emb_dim = 16, start_channels_base2 = 6, n_layers = 5, n_groups = None, kernel_size_base2 = None):
+    def __init__(self, in_channels, time_emb_dim, num_block = 2, out_channels=None, n_groups = None, kernel_size_base2 = None):
+        super(OutBlock, self).__init__()
+        if not isinstance(out_channels, int):
+            out_channels = in_channels // 2
+        
+        self.blocks = []
+        self.blocks.append(ConvBlock(in_channels, out_channels, time_emb_dim, n_groups=n_groups, kernel_size_base2=kernel_size_base2))
+        for _ in range(1, num_block):
+            self.blocks.append(ConvBlock(out_channels, out_channels, time_emb_dim, n_groups=n_groups, kernel_size_base2=kernel_size_base2))
+
+        self.activation = nn.SiLU()
+
+    def forward(self, x, pos_enc, skip):
+        x = torch.cat((skip, x), dim=-2)
+        for i in range(len(self.blocks)):
+            x = self.blocks[i](x, pos_enc)
+        return x
+
+    
+class UNet(nn.Module):
+
+    def __init__(self, channels = 2, time_emb_dim = 16, start_channels_base2 = 6, n_layers = 5, n_groups = None, kernel_size_base2 = None):
+        super(UNet, self).__init__()
         self.n_layers = n_layers
         self.encode = []
         self.decode = []
         self.encode.append(EncodeBlock(channels, time_emb_dim, out_channels = 2**start_channels_base2, n_groups=n_groups, kernel_size_base2=kernel_size_base2))
-        self.decode.append(DecodeBlock(2**(start_channels_base2 + 1), time_emb_dim, n_groups=n_groups, kernel_size_base2=kernel_size_base2))
+        self.decode.append(OutBlock(2**(start_channels_base2 + 1), time_emb_dim, n_groups=n_groups, kernel_size_base2=kernel_size_base2))
         for i in range(n_layers - 2):
-            self.encode.append(EncodeBlock(2**(start_channels_base2 + i + 1), time_emb_dim, n_groups=n_groups, kernel_size_base2=kernel_size_base2))
-            self.decode.append(DecodeBlock(2**(start_channels_base2 + i), time_emb_dim, n_groups=n_groups, kernel_size_base2=kernel_size_base2))
+            self.encode.append(EncodeBlock(2**(start_channels_base2 + i), time_emb_dim, n_groups=n_groups, kernel_size_base2=kernel_size_base2))
+            self.decode.append(DecodeBlock(2**(start_channels_base2 + i + 2), time_emb_dim, n_groups=n_groups, kernel_size_base2=kernel_size_base2))
         self.bottom = BottomBlock(2**(start_channels_base2 + n_layers - 2), time_emb_dim, n_groups=n_groups, kernel_size_base2=kernel_size_base2)
 
         self.last_conv = nn.Conv1d(2**(start_channels_base2), channels, 1)
@@ -172,111 +194,11 @@ class UNet(nn.module):
             x = self.decode[i](x, pos_enc, self.encode[i].skip)
         return self.last_conv(x)
 
-'''
-class UNet(nn.module):
 
-    def __init__(self, latent_dim, pos_enc_dim, n_channels = 1, n_groups = 6):
-        super(UNet, self).__init__()
-        self.in_dim = latent_dim
-        self.norm = AdaGN(n_channels, n_groups)
-        self.PE = Positional_Encoding(pos_enc_dim)
+if __name__ == "__main__":
 
-        #TOP U-LAYER
-        self.conv_1_1 = nn.Conv1d(1, 64, 3)
-        self.conv_1_2 = nn.Conv1d(64, 64, 3)
-        self.conv_1_3 = nn.Conv1d(128, 64, 3)
-        self.conv_1_4 = nn.Conv1d(64, 64, 3)
-        self.conv1x1 = nn.Conv1d(64, 2, 1)
-
-        #SECOND U-LAYER
-        self.conv_2_1 = nn.Conv1d(64, 128, 3)
-        self.conv_2_2 = nn.Conv1d(128, 128, 3)
-        self.conv_2_3 = nn.Conv1d(256, 128, 3)
-        self.conv_2_4 = nn.Conv1d(128, 128, 3)
-        self.upconv_2 = nn.ConvTranspose1d(128, 64, 2)
-
-        #THIRD U-LAYER
-        self.conv_3_1 = nn.Conv1d(128, 256, 3)
-        self.conv_3_2 = nn.Conv1d(256, 256, 3)
-        self.conv_3_3 = nn.Conv1d(512, 256, 3)
-        self.conv_3_4 = nn.Conv1d(256, 256, 3)
-        self.upconv_3 = nn.ConvTranspose1d(256, 128, 2)
-
-        #FOURTH U-LAYER
-        self.conv_4_1 = nn.Conv1d(256, 512, 3)
-        self.conv_4_2 = nn.Conv1d(512, 512, 3)
-        self.conv_4_3 = nn.Conv1d(1024, 512, 3)
-        self.conv_4_4 = nn.Conv1d(512, 512, 3)
-        self.upconv_4 = nn.ConvTranspose1d(512, 256, 2)
-
-        #BOTTOM U-LAYER
-        self.conv_5_1 = nn.Conv1d(512, 1024, 3)
-        self.conv_5_2 = nn.Conv1d(1024, 1024, 3)
-        self.upconv_5 = nn.ConvTranspose1d(1024, 512, 2)
-
-        #BETWEEN LAYERS
-        self.max_pool = nn.MaxPool1d(2)
-
-        #ACTIVATION
-        self.activation = nn.ReLU()
-
-    def forward(self, x, t):
-
-        #Positional encoding
-        pos_enc = self.PE(t)
-
-        # Down Layer 1
-        x = self.activation(self.norm(self.conv_1_1(x), pos_enc))
-        x = self.activation(self.norm(self.conv_1_2(x), pos_enc))
-        x = self.max_pool(x)
-        out1 = x.copy()
-
-        # Down layer 2
-        x = self.activation(self.norm(self.conv_2_1(x), pos_enc))
-        x = self.activation(self.norm(self.conv_2_2(x), pos_enc))
-        x = self.max_pool(x) 
-        out2 = x.copy()
-
-        # Down layer 3
-        x = self.activation(self.norm(self.conv_3_1(x), pos_enc))
-        x = self.activation(self.norm(self.conv_3_2(x), pos_enc))
-        x = self.max_pool(x) 
-        out3 = x.copy()
-
-        # Down layer 4
-        x = self.activation(self.norm(self.conv_4_1(x), pos_enc))
-        x = self.activation(self.norm(self.conv_4_2(x), pos_enc))
-        x = self.max_pool(x)
-        out4 = x.copy()  
-
-        # Bottom layer 
-        x = self.activation(self.norm(self.conv_5_1(x), pos_enc))
-        x = self.activation(self.norm(self.conv_5_2(x), pos_enc))
-        x = self.upconv_5(x)
-
-        # Up layer 4
-        x = torch.cat((out4, x), dim = 1)
-        x = self.activation(self.norm(self.conv_4_3(x), pos_enc))
-        x = self.activation(self.norm(self.conv_4_4(x), pos_enc))
-        x = self.upconv_4
-
-        # Up layer 3
-        x = torch.cat((out3, x), dim = 1)
-        x = self.activation(self.norm(self.conv_3_3(x), pos_enc))
-        x = self.activation(self.norm(self.conv_3_4(x), pos_enc))
-        x = self.upconv_4
-
-        # Up layer 2
-        x = torch.cat((out2, x), dim = 1)
-        x = self.activation(self.norm(self.conv_2_3(x), pos_enc))
-        x = self.activation(self.norm(self.conv_2_4(x), pos_enc))
-        x = self.upconv_4
-
-        # Up layer 1
-        x = torch.cat((out1, x), dim = 1)
-        x = self.activation(self.norm(self.conv_1_3(x), pos_enc))
-        x = self.activation(self.norm(self.conv_1_4(x), pos_enc))
-        x = self.conv1x1(x)
-
-        return x
-'''
+    model = UNet()
+    x = torch.randn((16, 2, 64))
+    t = torch.rand((16))
+    y = model(x, t)
+    print(y.shape)
