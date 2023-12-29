@@ -18,10 +18,11 @@ class UNetDiffusion(nn.Module):
     def forward(self, x, t):
         return self.model(x, t)
     
-    def inference(self, n_batch = 1, T = None):
+    def inference(self, x_0 = None, n_batch = 1, n_frames = 100, T = None):
         if T is None or not isinstance(T, int):
             T = self.alpha_steps
-        x_0 = self.sample(n_batch)
+        if x_0 is None:
+            x_0 = self.sample(n_batch, n_frames)
         denoised_samples = [x_0]
         alpha = torch.arange(T)/T
         for t in range(1,T,1):
@@ -29,5 +30,19 @@ class UNetDiffusion(nn.Module):
             denoised_samples.append(x_a)
         return denoised_samples
     
-    def sample(self, n_batch):
-        return self.mean + self.std * torch.randn((n_batch, self.n_channels))
+    def sample(self, n_batch, n_frames):
+        return self.mean + self.std * torch.randn((n_batch, self.n_channels, n_frames))
+    
+    def interpolate(self, x_0 = None, x_1 = None, n_batch = 1, n_inter = 10, n_frames = 100, T = None):
+        if x_0 is None:
+            x_0 = self.sample(n_batch, n_frames)
+        if x_1 is None:
+            x_1 = self.sample(n_batch, n_frames)
+
+        interpolations = []
+        for i in range(n_inter + 1):
+            a = i/n_inter
+            x_inter = a * x_0 + (1 - a) * x_1
+            interpolations.append(self.inference(x_0 = x_inter, n_batch=n_batch, n_frames=n_frames, T=T))
+        return interpolations
+
