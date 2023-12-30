@@ -1,11 +1,12 @@
 [
     {   
         "name": "default",
-        "optimzer": "Adam",
-        "lr": 0.001,
+        "optimizer": "Adam",
         "epochs": null,
         "log_epoch": 1000,
-        "inference_epoch": 1000,
-        "args": {}
+        "valid_epoch": 1000,
+        "args": {
+            "lr": 0.0001
+        }
     }
 ]

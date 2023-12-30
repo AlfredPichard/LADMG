@@ -15,7 +15,7 @@ class Trainer:
         self.logger.add_graph(self.model)
         self.epoch = 0
 
-    def train_one_epoch(self, log = False, inference = False):
+    def train_one_epoch(self, log = False):
         running_loss = 0.0
         batch_size = self.train_dataloader.batch_size
         for i, data in enumerate(self.train_dataloader):
@@ -36,11 +36,8 @@ class Trainer:
                             running_loss / i,
                             self.epoch)
             running_loss = 0.0
-        if inference:
-            audio = self.model.inference()
-            self.logger.add_audio('inference epoch ' + self.epoch, audio, sample_rate = self.model.encodec.sr)
-            self.logger.flush()
-            self.logger.close()
+        self.logger.flush()
+        self.logger.close()
         self.epoch += 1
 
     def validate(self):
@@ -59,7 +56,7 @@ class Trainer:
             self.optimizer.step()
             running_loss += loss.item()
         
-        self.logger.add_scalar('training loss',
+        self.logger.add_scalar('validation loss',
                         running_loss / i,
                         self.epoch)
         running_loss = 0.0
