@@ -36,23 +36,33 @@ class CheckPointManager:
         
         self.config = None
         for jconfig in data:
-            # On cherche une configuration ayant le nom "name"
+            # Search configuration with name "name"
             if jconfig.name == name:
                 self.config = jconfig
         if self.config == None:
             try:
-                # possibilité de faire passer l'indice dans config.json à la place du nom
+                # Possbilility to pass index argument instead of name
                 self.config = data[int(name)]
             except:
-                # Si aucune configuration correspond, on prend la première
+                # If no configuration corresponds, return first configuration (which is default configuration)
                 self.config = data[0]
         f.close()
 
-        last = self.get_last_checkpoint()
-        if last:
-            now = int(last) + 1
+        last_file, last_iter = self.get_last_checkpoint()
+
+        # now is the number of iterations of models saved for given configuration
+        if last_iter:
+            now = int(last_iter) + 1
         else:
             now = 1
+
+        # last_file is the last saved model file for the given configuration, if it exists
+        if last_file:
+            self.last_file = os.path.join(self.SAVE_MODEL_DIR, last_file)
+        else:
+            self.last_file = None
+
+        self.last_epoch = int(self.last_file[:-3].split("_epoch")[-1])
 
         self.name = self.config.name + "_iter" + now
 
@@ -62,17 +72,17 @@ class CheckPointManager:
 
     # Renvoie le dernier checkpoint pour la config donnée
     def get_last_checkpoint(self):
-        last = None
+        last = None, None
         files = [f for f in os.listdir(self.SAVE_MODEL_DIR) if os.path.isfile(os.path.join(self.SAVE_MODEL_DIR, f))]
         for f in files:
             if f[-3:] == ".pt" and f.split("_iter")[0] == self.config.name:
                 iteration = int(f.split("_iter")[0])
                 if last is None or iteration > last:
-                    last = iteration
+                    last = f, iteration
         return last
     
     def get_model(self):
-        if self.config.name == "diff_unet_simple_encodec_24":
+        if self.config.model == "UNetDiffusion":
             return UNetDiffusion(**self.config.args)
         else:
             raise Exception('CheckPointManager', f'{self.config.name} is an unvalid model configuration')           
@@ -115,7 +125,7 @@ class TrainingManager:
                 self.config = data[0]
         f.close()
 
-    def get_optimizer(self, model):
+    def get_optimizer(self):
         if self.config.optimizer == "Adam":
             return torch.optim.Adam(**self.config.args)
         else: 

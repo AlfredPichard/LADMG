@@ -1,6 +1,7 @@
 [
     { 
         "name": "diff_unet_simple_encodec_24",
+        "model": "UNetDiffusion",
         "loss": "MSE",
         "args": {
             "n_layers": 5,
