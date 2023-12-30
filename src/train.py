@@ -1,6 +1,7 @@
 import torch
 from torch.utils.tensorboard import SummaryWriter
 import utils
+import numpy as np
 
 class Trainer:
 
@@ -76,6 +77,17 @@ class Trainer:
 
 if __name__ == "__main__":
 
+    import dataset as ds
+
+    path = "/data/atiam/triana/data/"
+    dataset = ds.SimpleDataset(path=path, keys = ["encodec","metadata","clap"])
+
+    batch = 1
+
+    train_dataset, valid_dataset= torch.utils.data.random_split(dataset, [0.8, 0.2])
+    train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size = batch, shuffle = True, collate_fn = ds.collate_fn_padd)
+    valid_dataloader = torch.utils.data.DataLoader(valid_dataset, batch_size = batch, shuffle = True, collate_fn = ds.collate_fn_padd)
+
     cm = utils.CheckPointManager()
     model = cm.get_model()
         
@@ -89,5 +101,9 @@ if __name__ == "__main__":
     if cm.last_checkpoint:
         trainer.load(cm.last_file)
 
-    y = model.inference()
-    print(y.shape)
+    d = next(iter(train_dataloader))
+    z = d["encodec"]
+    print(z.shape)
+    t = torch.rand((batch))
+    z_pred = model.forward(z, t)
+    print(z_pred.shape)
