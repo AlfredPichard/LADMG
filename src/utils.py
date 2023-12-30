@@ -2,6 +2,7 @@ import torch
 import os
 from datetime import datetime
 import json
+from diffusion import UNetDiffusion
 
 def save_checkpoint(model, model_name, dir_path = "../saved_models"):
 
@@ -69,6 +70,12 @@ class CheckPointManager:
                 if last is None or iteration > last:
                     last = iteration
         return last
+    
+    def get_model(self):
+        if self.config.name == "diff_unet_simple_encodec_24":
+            return UNetDiffusion(**self.config.args)
+        else:
+            raise Exception('CheckPointManager', f'{self.config.name} is an unvalid model configuration')           
     
     def get_loss(self):
         if self.config.loss == "MSE":

@@ -66,7 +66,7 @@ class Trainer:
         self.logger.close()
 
     def checkpoint(self):
-        name = self.manager.name + "_e" + self.epoch
+        name = self.manager.name + "_epoch" + self.epoch
         utils.save_checkpoint(self.model, name)
 
     def load(self, model_path):
