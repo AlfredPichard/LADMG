@@ -37,7 +37,6 @@ class CheckPointManager:
         
         self.config = None
         for jconfig in data:
-            print(jconfig)
             # Search configuration with name "name"
             if jconfig["name"] == name:
                 self.config = jconfig
