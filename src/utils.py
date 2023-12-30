@@ -21,9 +21,10 @@ Manager for model initialisation, retrieves model configuration given a name for
 #############################################
 class CheckPointManager:
 
-    CONFIG_FILE = os.path.join(os.path.dirname(__file__) + "/../config/models.json")
-    SAVE_MODEL_DIR = os.path.join(os.path.dirname(__file__) + "/../saved_models")
-    LOG_DIR = os.path.join(os.path.dirname(__file__) + "/../log")
+    REP = os.path.dirname(os.path.dirname(__file__)) # LADMG folder
+    CONFIG_FILE = os.path.join(REP + "/config/models.json")
+    SAVE_MODEL_DIR = os.path.join(REP + "/saved_models")
+    LOG_DIR = os.path.join(REP + "/log")
 
     def __init__(self, name = None, last_checkpoint = False):
         '''
@@ -105,7 +106,8 @@ Manager for training configuration, retrieves training configuration given a nam
 #############################################
 class TrainingManager:
 
-    CONFIG_FILE = os.path.join(os.path.dirname(__file__) + "/../config/train.json")
+    REP = os.path.dirname(os.path.dirname(__file__)) # LADMG folder
+    CONFIG_FILE = os.path.join(REP + "/config/train.json")
 
     def __init__(self, name = "default"):
         '''
