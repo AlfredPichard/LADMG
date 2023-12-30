@@ -92,8 +92,8 @@ if __name__ == "__main__":
     batch = 16
 
     train_dataset, valid_dataset= torch.utils.data.random_split(dataset, [0.8, 0.2])
-    train_dataloader = torch.util.data.Dataloader(train_dataset, batch_size = batch, shuffle = True)
-    valid_dataloader = torch.util.data.Dataloader(valid_dataset, batch_size = batch, shuffle = True)
+    train_dataloader = torch.utils.data.Dataloader(train_dataset, batch_size = batch, shuffle = True)
+    valid_dataloader = torch.utils.data.Dataloader(valid_dataset, batch_size = batch, shuffle = True)
 
     cm = utils.CheckPointManager()
     model = cm.get_model()
