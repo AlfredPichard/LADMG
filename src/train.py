@@ -78,6 +78,23 @@ if __name__ == "__main__":
 
     from dataset import SimpleDataset
 
+    path = "/data/atiam/triana/data/"
+    dataset = SimpleDataset(path=path, keys = ["encodec","metadata","clap"])
+
+    d0 = dataset[0]
+    z_encodec = d0["encodec"]
+    metadata = d0["metadata"]
+    clap_emb = d0["clap"]
+
+    print(z_encodec.shape)
+    print(clap_emb.shape)
+
+    batch = 16
+
+    train_dataset, valid_dataset= torch.utils.data.random_split(dataset, [0.8, 0.2])
+    train_dataloader = torch.util.data.Dataloader(train_dataset, batch_size = batch, shuffle = True)
+    valid_dataloader = torch.util.data.Dataloader(valid_dataset, batch_size = batch, shuffle = True)
+
     cm = utils.CheckPointManager()
     model = cm.get_model()
         
@@ -91,16 +108,7 @@ if __name__ == "__main__":
     if cm.last_checkpoint:
         trainer.load(cm.last_file)
 
-    y = model.inference()
-    print(y.shape)
-
-    path = "/data/nils/jamendo/encodec_24k/"
-    dataset = SimpleDataset(path=path, keys = ["encodec","metadata","clap"])
-
-    d0 = dataset[0]
-    z_encodec = d0["encodec"]
-    metadata = d0["metadata"]
-    clap_emb = d0["clap"]
-
-    print(z_encodec.shape)
-    print(clap_emb.shape)
+    d = next(iter(train_dataloader))
+    z = d["encodec"]
+    t = torch.rand((batch))
+    z_pred = model.forward(z, t)
