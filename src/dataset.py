@@ -7,7 +7,7 @@ class SimpleDataset(torch.utils.data.Dataset):
 
     def __init__(self, path,keys=['waveform','metadata'], transforms=None,readonly=True) -> None:
         super().__init__()
-        self.env = lmdb.open(path, readonly=readonly)#, map_async=not True, writemap=not True)
+        self.env = lmdb.open(path, lock=False, readonly=readonly)#, map_async=not True, writemap=not True)
         with self.env.begin() as txn:
             self.keys = list(txn.cursor().iternext(values=False))
         self.buffer_keys = keys
