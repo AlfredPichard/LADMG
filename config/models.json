@@ -1,0 +1,10 @@
+[
+    { 
+        "name": "diff_unet_simple_encodec_24",
+        "n_layers": 5,
+        "time_emb_dim": 16,
+        "start_channels_base2": 6,
+        "kernel_size_base2": 1,
+        "n_groups": null
+    }
+]
