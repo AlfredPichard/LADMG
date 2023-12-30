@@ -5,10 +5,15 @@ from models.encodec_model import WrappedEncodec
 
 class UNetDiffusion(nn.Module):
 
-    def __init__(self, n_channels = 128, alpha_steps = 100):
+    def __init__(self, n_channels = 128, alpha_steps = 100, time_emb_dim=16, start_channels_base2=6, n_layers=5, kernel_size_base2=1, n_groups=None):
         super(UNetDiffusion, self).__init__()
         self.n_channels = n_channels
-        self.model = UNet(channels = n_channels)
+        self.model = UNet(channels = n_channels, 
+                          time_emb_dim = time_emb_dim, 
+                          start_channels_base2 = start_channels_base2, 
+                          n_layers = n_layers, 
+                          kernel_size_base2 = kernel_size_base2, 
+                          n_groups = n_groups)
         self.encodec = WrappedEncodec()
         self.alpha_steps = alpha_steps
         self._config_prior(torch.zeros(n_channels, 1), torch.ones(n_channels, 1))
