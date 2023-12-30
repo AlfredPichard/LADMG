@@ -12,7 +12,9 @@ class Trainer:
         self.logger = SummaryWriter(self.manager.log_path)
         self.train_dataloader = train_dataloader
         self.valid_dataloader = valid_dataloader
-        self.logger.add_graph(self.model)
+        """self.logger.add_graph(self.model)
+        self.logger.flush()
+        self.logger.close()"""
         self.epoch = 0
 
     def train_one_epoch(self, log = False):
@@ -71,3 +73,21 @@ class Trainer:
 
     def load(self, model_path):
         utils.load_checkpoint(self.model, model_path)
+
+if __name__ == "__main__":
+
+    cm = utils.CheckPointManager()
+    model = cm.get_model()
+        
+    loss = cm.get_loss()
+
+    tm = utils.TrainingManager()
+    optimizer = tm.get_optimizer(model)
+
+    trainer = Trainer(model, cm, optimizer, loss, None, None)
+
+    if cm.last_checkpoint:
+        trainer.load(cm.last_file)
+
+    y = model.inference()
+    print(y.shape)
