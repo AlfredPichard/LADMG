@@ -76,6 +76,8 @@ class Trainer:
 
 if __name__ == "__main__":
 
+    from dataset import SimpleDataset
+
     cm = utils.CheckPointManager()
     model = cm.get_model()
         
@@ -91,3 +93,14 @@ if __name__ == "__main__":
 
     y = model.inference()
     print(y.shape)
+
+    path = "/data/nils/jamendo/encodec_24k/"
+    dataset = SimpleDataset(path=path, keys = ["encodec","metadata","clap"])
+
+    d0 = dataset[0]
+    z_encodec = d0["encodec"]
+    metadata = d0["metadata"]
+    clap_emb = d0["clap"]
+
+    print(z_encodec.shape)
+    print(clap_emb.shape)
