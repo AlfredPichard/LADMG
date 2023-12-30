@@ -3,6 +3,9 @@
         "name": "default",
         "optimzer": "Adam",
         "lr": 0.001,
+        "epochs": null,
+        "log_epoch": 1000,
+        "inference_epoch": 1000,
         "args": {}
     }
 ]
