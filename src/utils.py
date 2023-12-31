@@ -162,6 +162,7 @@ class Parser:
     LOG_EPOCHS = 1000
     MODEL = None
     TRAINING = 'default'
+    BATCH = 32
 
     def __init__(self):
         self.parser = argparse.ArgumentParser(description='Train latent audio diffusion model for music generation')
@@ -171,5 +172,6 @@ class Parser:
         self.parser.add_argument('-l', '--log', type=int, default=self.LOG_EPOCHS, dest='epochs_log', required=False, nargs='?', help=f'Specify after how many epochs to log, default is {self.LOG_EPOCHS}')
         self.parser.add_argument('-m', '--model', type=str, default=self.MODEL, dest='model', required=False, nargs='?', help='Model configuration to load')
         self.parser.add_argument('-t', '--training', type=str, default=self.TRAINING, dest='train', required=False, nargs='?', help='Training configuration to load')
+        self.parser.add_argument('-b', '--batch', type=int, default=self.BATCH, dest='batch', required=False, nargs='?', help='Training batch size')
         # Specific arguments
         self.args = self.parser.parse_args()
