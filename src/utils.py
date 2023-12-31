@@ -5,10 +5,10 @@ import json
 from diffusion import UNetDiffusion
 import argparse
 
-def save_checkpoint(model, model_name, dir_path = "../saved_models"):
+def save_checkpoint(model, model_path):
 
-    model_path = model_name + ".pt"
-    model_path = os.path.join(dir_path, model_path)
+    model_path = model_path + ".pt"
+    #model_path = os.path.join(dir_path, model_path)
     torch.save(obj=model.state_dict(),
              f=model_path)
     
@@ -26,6 +26,7 @@ class CheckPointManager:
     CONFIG_FILE = os.path.join(REP + "/config/models.json")
     SAVE_MODEL_DIR = os.path.join(REP + "/saved_models")
     LOG_DIR = os.path.join(REP + "/log")
+    DEVICE = torch.device("cuda:1")
 
     def __init__(self, name = None, last_checkpoint = False):
         '''
@@ -57,7 +58,7 @@ class CheckPointManager:
         if last_iter and last_checkpoint:
             now = int(last_iter)
         elif last_iter:
-            now = int(last_iter)
+            now = int(last_iter) + 1
         else:
             now = 1
 
@@ -72,6 +73,7 @@ class CheckPointManager:
 
 
         self.name = self.config["name"] + "_iter" + str(now)
+        self.model_path = os.path.join(self.SAVE_MODEL_DIR, self.name)
 
         self.log_path = os.path.join(self.LOG_DIR, self.name)
 
@@ -79,17 +81,20 @@ class CheckPointManager:
     # Renvoie le dernier checkpoint pour la config donnée
     def get_last_checkpoint(self):
         last = None, None
+        last_epoch = 0
         files = [f for f in os.listdir(self.SAVE_MODEL_DIR) if os.path.isfile(os.path.join(self.SAVE_MODEL_DIR, f))]
         for f in files:
             if f[-3:] == ".pt" and f.split("_iter")[0] == self.config["name"]:
-                iteration = int(f.split("_iter")[0])
-                if last is None or iteration > last:
+                iteration = int(f.split("_iter")[1].split("_")[0])
+                epoch = int(f[:-3].split("_epoch")[-1])
+                if last[0] is None or iteration > last[1] or(iteration > last[1] and epoch > last_epoch):
                     last = f, iteration
+                    last_epoch = epoch
         return last
     
     def get_model(self):
         if self.config["model"] == "UNetDiffusion":
-            return UNetDiffusion(**self.config["args"])
+            return UNetDiffusion(**self.config["args"], device = self.DEVICE)
         else:
             raise Exception('CheckPointManager', f'{self.config["name"]} is an unvalid model configuration')           
     
@@ -159,10 +164,10 @@ class Parser:
 
     # Default values
     EPOCHS = None
-    LOG_EPOCHS = 1000
+    LOG_EPOCHS = 10
     MODEL = None
     TRAINING = 'default'
-    BATCH = 32
+    BATCH = 64
 
     def __init__(self):
         self.parser = argparse.ArgumentParser(description='Train latent audio diffusion model for music generation')

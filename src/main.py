@@ -1,6 +1,7 @@
 import torch
 import dataset as ds
 import utils, train, diffusion
+import sys
 
 if __name__ == "__main__":
 
@@ -26,15 +27,29 @@ if __name__ == "__main__":
     tm = utils.TrainingManager()
     optimizer = tm.get_optimizer(model)
 
-    trainer = train.Trainer(model, cm, optimizer, loss, None, None)
+    trainer = train.Trainer(model, cm, optimizer, loss, train_dataloader, valid_dataloader)
 
     if cm.last_checkpoint:
         trainer.load(cm.last_file)
+        trainer.epoch = cm.last_epoch
 
-    for i in range(10):
-        d = next(iter(train_dataloader))
-        z = d["encodec"]
-        print(z.shape)
-        t = torch.rand((batch))
-        z_pred = model.forward(z, t)
-        print(z_pred.shape)
+    try:
+        if parser.args.epochs:
+            for i in range(parser.args.epochs):
+                log = (trainer.epoch == parser.args.epochs_log)
+                trainer.train_one_epoch(log = True)
+                if log:
+                    trainer.validate()
+            print('Training stopping, saving model')
+            trainer.checkpoint()
+            sys.exit()
+        else:
+            while True:
+                log = ((trainer.epoch + 1) % parser.args.epochs_log == 0 and trainer.epoch > 0)
+                trainer.train_one_epoch(log = True)
+                if log:
+                    trainer.validate()
+    except KeyboardInterrupt:
+        print('Training stopping, saving model')
+        trainer.checkpoint()
+        sys.exit()

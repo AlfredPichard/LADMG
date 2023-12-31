@@ -6,7 +6,7 @@ from modules import EncodeBlock, DecodeBlock, BottomBlock, OutBlock, PositionalE
 
 class UNet(nn.Module):
 
-    def __init__(self, channels=2, time_emb_dim=16, start_channels_base2=6, n_layers=5, kernel_size_base2=1, n_groups=None):
+    def __init__(self, channels=2, time_emb_dim=16, start_channels_base2=6, n_layers=5, kernel_size_base2=1, n_groups=None, device='cpu'):
         super(UNet, self).__init__()
         self.n_layers = n_layers
 
@@ -16,7 +16,8 @@ class UNet(nn.Module):
                 out_channels = 2**start_channels_base2,
                 time_emb_dim=time_emb_dim, 
                 n_groups=n_groups, 
-                kernel_size_base2=kernel_size_base2)
+                kernel_size_base2=kernel_size_base2, 
+                device = device)
             ]
         
         self.decode = [
@@ -24,7 +25,8 @@ class UNet(nn.Module):
                 in_channels=2**(start_channels_base2 + 1), 
                 time_emb_dim=time_emb_dim, 
                 n_groups=n_groups, 
-                kernel_size_base2=kernel_size_base2)
+                kernel_size_base2=kernel_size_base2, 
+                device = device)
             ]
 
         for i in range(n_layers - 2):
@@ -33,24 +35,27 @@ class UNet(nn.Module):
                     in_channels=2**(start_channels_base2 + i), 
                     time_emb_dim=time_emb_dim, 
                     n_groups=n_groups, 
-                    kernel_size_base2=kernel_size_base2)
+                    kernel_size_base2=kernel_size_base2, 
+                    device = device)
                 )
             self.decode.append(
                 DecodeBlock(
                     in_channels=2**(start_channels_base2 + i + 2), 
                     time_emb_dim=time_emb_dim, 
                     n_groups=n_groups,
-                    kernel_size_base2=kernel_size_base2)
+                    kernel_size_base2=kernel_size_base2,
+                    device = device)
                 )
             
         self.bottom = BottomBlock(
             in_channels=2**(start_channels_base2 + n_layers - 2), 
             time_emb_dim=time_emb_dim, 
             n_groups=n_groups, 
-            kernel_size_base2=kernel_size_base2)
+            kernel_size_base2=kernel_size_base2,
+            device = device)
 
-        self.last_conv = nn.Conv1d(2**(start_channels_base2), channels, 1)
-        self.pos_encoding = PositionalEncoding(time_emb_dim)
+        self.last_conv = nn.Conv1d(2**(start_channels_base2), channels, 1, device=device)
+        self.pos_encoding = PositionalEncoding(time_emb_dim, device = device)
         
     def forward(self, x, t):
         pos_enc = self.pos_encoding(t)
