@@ -3,6 +3,7 @@ import os
 from datetime import datetime
 import json
 from diffusion import UNetDiffusion
+import argparse
 
 def save_checkpoint(model, model_name, dir_path = "../saved_models"):
 
@@ -148,3 +149,27 @@ if __name__ == "__main__":
 
     y = model.inference()
     print(y.shape)
+
+#############################################
+"""
+Parser to manage arguments when running main file (src/main.py)
+"""
+#############################################
+class Parser:
+
+    # Default values
+    EPOCHS = None
+    LOG_EPOCHS = 1000
+    MODEL = None
+    TRAINING = 'default'
+
+    def __init__(self):
+        self.parser = argparse.ArgumentParser(description='Train latent audio diffusion model for music generation')
+        # General arguments
+        self.parser.add_argument('-c', '--checkpoint', required=False, dest='checkpoint', action='store_const', const=True, default=False, help='If possible start training from last checkpoint')
+        self.parser.add_argument('-e', '--epochs', type=int, default=self.EPOCHS, dest='epochs', required=False, nargs='?', help='Specify training epochs, default is infinite')
+        self.parser.add_argument('-l', '--log', type=int, default=self.LOG_EPOCHS, dest='epochs_log', required=False, nargs='?', help=f'Specify after how many epochs to log, default is {self.LOG_EPOCHS}')
+        self.parser.add_argument('-m', '--model', type=str, default=self.MODEL, dest='model', required=False, nargs='?', help='Model configuration to load')
+        self.parser.add_argument('-t', '--training', type=str, default=self.TRAINING, dest='train', required=False, nargs='?', help='Training configuration to load')
+        # Specific arguments
+        self.args = self.parser.parse_args()
