@@ -21,8 +21,8 @@ if __name__ == "__main__":
     batch = parser.args.batch
 
     train_dataset, valid_dataset= torch.utils.data.random_split(dataset, [0.8, 0.2])
-    train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size = batch, shuffle = True, collate_fn = ds.collate_fn_padd)
-    valid_dataloader = torch.utils.data.DataLoader(valid_dataset, batch_size = batch, shuffle = True, collate_fn = ds.collate_fn_padd)
+    train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size = batch, shuffle = True, collate_fn = ds.collate_fn_padd, drop_last=True)
+    valid_dataloader = torch.utils.data.DataLoader(valid_dataset, batch_size = batch, shuffle = True, collate_fn = ds.collate_fn_padd, drop_last=True)
 
     tm = utils.TrainingManager()
     optimizer = tm.get_optimizer(model)

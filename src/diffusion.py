@@ -34,7 +34,7 @@ class UNetDiffusion(nn.Module):
         denoised_samples = [x_0]
         alpha = torch.arange(T).to(self.device)/T
         for t in range(1,T,1):
-            x_a = denoised_samples[-1] + (alpha[t] - alpha[t-1])*self.forward(denoised_samples[-1],alpha[t]*torch.ones(n_batch))
+            x_a = denoised_samples[-1] + (alpha[t] - alpha[t-1])*self.forward(denoised_samples[-1],alpha[t]*torch.ones(n_batch, device=self.device))
             denoised_samples.append(x_a)
         return self.encodec.decode(denoised_samples[-1])
     
