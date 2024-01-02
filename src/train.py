@@ -5,6 +5,8 @@ import numpy as np
 
 class Trainer:
 
+    DEVICE = 'cuda:1'
+
     def __init__(self, model, manager, optimizer, loss_function, train_dataloader, valid_dataloader):
         self.model = model
         self.manager = manager
@@ -18,13 +20,13 @@ class Trainer:
         self.logger.close()"""
         self.epoch = 0
 
-    def train_one_epoch(self, log = False):
+    def train_one_epoch(self, log = True):
         running_loss = 0.0
         batch_size = self.train_dataloader.batch_size
         for i, data in enumerate(self.train_dataloader):
-            z_1, meta = data
-            a = torch.rand((batch_size))
-            z_0 = self.model.sample(batch_size, z_1.shape[-1])
+            z_1 = data['encodec'].to(self.DEVICE)
+            a = torch.rand((batch_size)).view(batch_size, 1, 1).to(self.DEVICE)
+            z_0 = self.model.sample(batch_size, z_1.shape[-1]).to(self.DEVICE)
             z_a = ((1 - a)*z_0 + a*z_1)
             diff_pred = self.model(z_a, a)
             real_diff = z_1 - z_0
@@ -33,23 +35,25 @@ class Trainer:
             loss.backward()
             self.optimizer.step()
             running_loss += loss.item()
+            #if i > 10:
+            #    break
         
         if log:
+            print(f'Epoch {self.epoch + 1}, training loss: {running_loss / (i+1)}')
             self.logger.add_scalar('training loss',
-                            running_loss / i,
-                            self.epoch)
-            running_loss = 0.0
-        self.logger.flush()
-        self.logger.close()
+                running_loss / (i+1),
+                self.epoch)
+            self.logger.flush()
+            self.logger.close()
         self.epoch += 1
 
     def validate(self):
         running_loss = 0.0
         batch_size = self.valid_dataloader.batch_size
         for i, data in enumerate(self.valid_dataloader):
-            z_1, meta = data
-            a = torch.rand((batch_size))
-            z_0 = self.model.sample(batch_size, z_1.shape[-1])
+            z_1 = data['encodec'].to(self.DEVICE)
+            a = torch.rand((batch_size)).view(batch_size, 1, 1).to(self.DEVICE)
+            z_0 = self.model.sample(batch_size, z_1.shape[-1]).to(self.DEVICE)
             z_a = ((1 - a)*z_0 + a*z_1)
             diff_pred = self.model(z_a, a)
             real_diff = z_1 - z_0
@@ -58,21 +62,25 @@ class Trainer:
             loss.backward()
             self.optimizer.step()
             running_loss += loss.item()
+            #if i > 10:
+            #    break
         
+        print(f'Epoch {self.epoch}, validation loss: {running_loss / (i+1)}')
         self.logger.add_scalar('validation loss',
-                        running_loss / i,
+                        running_loss / (i+1),
                         self.epoch)
-        running_loss = 0.0
         audio = self.model.inference()
-        self.logger.add_audio('inference epoch ' + self.epoch, audio, sample_rate = self.model.encodec.sr)
+        self.logger.add_audio('inference epoch' + str(self.epoch - 1), audio, sample_rate = self.model.encodec.sr)
         self.logger.flush()
         self.logger.close()
 
     def checkpoint(self):
-        name = self.manager.name + "_epoch" + self.epoch
+        name = self.manager.model_path + "_epoch" + str(self.epoch)
+        #name = self.manager.name
         utils.save_checkpoint(self.model, name)
 
     def load(self, model_path):
+        print(f'Loading from {model_path}')
         utils.load_checkpoint(self.model, model_path)
 
 if __name__ == "__main__":
