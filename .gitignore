@@ -165,6 +165,9 @@ log/
 # saved models
 *.pt
 
+#icloud unloaded files
+*.icloud
+
 # Paul Triana
 other
 
