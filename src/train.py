@@ -5,7 +5,7 @@ import numpy as np
 
 class Trainer:
 
-    DEVICE = 'cuda:1'
+    DEVICE = 'cuda:2'
 
     def __init__(self, model, manager, optimizer, loss_function, train_dataloader, valid_dataloader):
         self.model = model

@@ -11,20 +11,20 @@ Low level - Encoding and Ada Group Normalization
 class PositionalEncoding(nn.Module):
     def __init__(self, input_dim, max_steps = 10000, device='cpu'):
         super(PositionalEncoding, self).__init__()
+        self.device = device
         self.input_dim = input_dim
         self.max_steps = max_steps
-        self.device = device
+        self.omega = torch.exp((torch.arange(0, self.input_dim, 2, dtype=torch.float, device=self.device) * -(np.log(1000.0) / self.input_dim)))
 
-    def forward(self, alpha):
-        pe = torch.zeros(self.max_steps, self.input_dim, device=self.device)
-        position = torch.arange(0, self.max_steps, device=self.device).unsqueeze(1).float()
-        omega = torch.exp((torch.arange(0, self.input_dim, 2, dtype=torch.float, device=self.device) * -(torch.tensor(np.log(1000.0), device=self.device) / self.input_dim))).to(self.device)
-        pe[:, 0::2] = torch.sin(position * omega)
-        pe[:, 1::2] = torch.cos(position * omega)
+    def forward(self, x):
+        x = x.squeeze(1)
+        pe = torch.zeros(min(x.size(0), self.max_steps), self.input_dim, device=self.device)
+        pe[:, 0::2] = torch.sin(x * self.omega)
+        pe[:, 1::2] = torch.cos(x * self.omega)
+        pe = pe[:x.size(0)]
+        
+        return pe
 
-        alpha = pe[:alpha.size(0)]
-        return alpha
-    
 
 class AdaGN(nn.Module):
     def __init__(self, in_channels, time_emb_dim, n_groups=None, device='cpu'):
