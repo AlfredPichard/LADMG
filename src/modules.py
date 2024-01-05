@@ -88,11 +88,11 @@ class BottomBlock(nn.Module):
         if out_channels is None:
             out_channels = in_channels * 2
         self.device = device
-        
-        self.blocks = [ConvBlock(in_channels, out_channels, time_emb_dim, n_groups, kernel_size_base2, device=self.device)]
-        for _ in range(1, num_block):
-            self.blocks.append(ConvBlock(out_channels, out_channels, time_emb_dim, n_groups, kernel_size_base2, device=self.device))
 
+        self.blocks = nn.ModuleList(
+            [ConvBlock(in_channels, out_channels, time_emb_dim, n_groups, kernel_size_base2, device=self.device),
+            *[ConvBlock(out_channels, out_channels, time_emb_dim, n_groups, kernel_size_base2, device=self.device) for _ in range(num_block-1)]]
+        )
         self.activation = nn.SiLU()
 
         if not isinstance(kernel_size_base2,int) or not kernel_size_base2 > 0:
@@ -114,11 +114,11 @@ class OutBlock(nn.Module):
         if out_channels is None:
             out_channels = in_channels // 2
         self.device = device
-        
-        self.blocks = [ConvBlock(in_channels, out_channels, time_emb_dim, n_groups, kernel_size_base2, device=self.device)]
-        for _ in range(1, num_block):
-            self.blocks.append(ConvBlock(out_channels, out_channels, time_emb_dim, n_groups, kernel_size_base2, device=self.device))
 
+        self.blocks = nn.ModuleList(
+            [ConvBlock(in_channels, out_channels, time_emb_dim, n_groups, kernel_size_base2, device=self.device),
+            *[ConvBlock(out_channels, out_channels, time_emb_dim, n_groups, kernel_size_base2, device=self.device) for _ in range(num_block-1)]]
+        )
         self.activation = nn.SiLU()
 
     def forward(self, x, pos_enc, skip):
@@ -140,11 +140,11 @@ class EncodeBlock(nn.Module):
         if out_channels is None:
             out_channels = 2 * in_channels
         self.device = device
-        
-        self.blocks = [ConvBlock(in_channels, out_channels, time_emb_dim, n_groups, kernel_size_base2, device=self.device)]
-        for _ in range(1, block_size):
-            self.blocks.append(ConvBlock(out_channels, out_channels, time_emb_dim, n_groups, kernel_size_base2, device=self.device))
 
+        self.blocks = nn.ModuleList(
+            [ConvBlock(in_channels, out_channels, time_emb_dim, n_groups, kernel_size_base2, device=self.device),
+            *[ConvBlock(out_channels, out_channels, time_emb_dim, n_groups, kernel_size_base2, device=self.device) for _ in range(block_size-1)]]
+        )
         self.activation = nn.SiLU()
 
         kernel_size = 2**kernel_size_base2 + 1
@@ -166,12 +166,11 @@ class DecodeBlock(nn.Module):
         if out_channels is None:
             out_channels = in_channels // 2
         self.device = device
-        
-        self.blocks = []
-        self.blocks.append(ConvBlock(in_channels, out_channels, time_emb_dim, n_groups=n_groups, kernel_size_base2=kernel_size_base2, device=self.device))
-        for _ in range(1, num_block):
-            self.blocks.append(ConvBlock(out_channels, out_channels, time_emb_dim, n_groups=n_groups, kernel_size_base2=kernel_size_base2, device=self.device))
 
+        self.blocks = nn.ModuleList(
+            [ConvBlock(in_channels, out_channels, time_emb_dim, n_groups=n_groups, kernel_size_base2=kernel_size_base2, device=self.device),
+            *[ConvBlock(out_channels, out_channels, time_emb_dim, n_groups=n_groups, kernel_size_base2=kernel_size_base2, device=self.device) for _ in range(num_block-1)]]
+        )
         self.activation = nn.SiLU()
 
         kernel_size = 2**kernel_size_base2 + 1

@@ -10,7 +10,7 @@ class UNet(nn.Module):
         super(UNet, self).__init__()
         self.n_layers = n_layers
 
-        self.encode = [
+        self.encode = nn.ModuleList([
             EncodeBlock(
                 in_channels=channels, 
                 out_channels = 2**start_channels_base2,
@@ -18,16 +18,16 @@ class UNet(nn.Module):
                 n_groups=n_groups, 
                 kernel_size_base2=kernel_size_base2, 
                 device = device)
-            ]
+            ])
         
-        self.decode = [
+        self.decode = nn.ModuleList([
             OutBlock(
                 in_channels=2**(start_channels_base2 + 1), 
                 time_emb_dim=time_emb_dim, 
                 n_groups=n_groups, 
                 kernel_size_base2=kernel_size_base2, 
                 device = device)
-            ]
+            ])
 
         for i in range(n_layers - 2):
             self.encode.append(
