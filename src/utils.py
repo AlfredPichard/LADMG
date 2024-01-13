@@ -167,7 +167,7 @@ class Parser:
     LOG_EPOCHS = 10
     MODEL = None
     TRAINING = 'default'
-    BATCH = 64
+    BATCH = 16
 
     def __init__(self):
         self.parser = argparse.ArgumentParser(description='Train latent audio diffusion model for music generation')
