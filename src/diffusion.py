@@ -26,7 +26,7 @@ class UNetDiffusion(nn.Module):
     def forward(self, x, t):
         return self.model(x, t)
     
-    def inference(self, x_0 = None, n_batch = 1, n_frames = 128, T = None):
+    def inference(self, x_0 = None, n_batch = 1, n_frames = 10 * 128, T = None):
         if T is None or not isinstance(T, int):
             T = self.alpha_steps
         if x_0 is None:
