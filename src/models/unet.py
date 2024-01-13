@@ -6,7 +6,7 @@ from modules import EncodeBlock, DecodeBlock, BottomBlock, OutBlock, PositionalE
 
 class UNet(nn.Module):
 
-    def __init__(self, channels=2, time_emb_dim=16, start_channels_base2=6, n_layers=5, kernel_size_base2=1, n_groups=None, device='cpu'):
+    def __init__(self, channels=2, time_emb_dim=64, start_channels_base2=6, n_layers=5, kernel_size_base2=1, n_groups=None, device='cpu'):
         super(UNet, self).__init__()
         self.n_layers = n_layers
 
@@ -52,7 +52,7 @@ class UNet(nn.Module):
         self.pos_encoding = PositionalEncoding(time_emb_dim, device = device)
         
     def forward(self, x, t):
-        pos_enc = self.pos_encoding(t)
+        pos_enc = self.pos_encoding(100*t)
         skip_connections = []
 
         for i in range(self.n_layers - 1):
