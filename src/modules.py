@@ -9,7 +9,7 @@ Low level - Encoding and Ada Group Normalization
 """
 #############################################
 class PositionalEncoding(nn.Module):
-    def __init__(self, input_dim, max_steps = 10000, device='cpu'):
+    def __init__(self, input_dim, max_steps = 5000, device='cpu'):
         super(PositionalEncoding, self).__init__()
         self.device = device
         self.input_dim = input_dim
@@ -18,9 +18,9 @@ class PositionalEncoding(nn.Module):
 
     def forward(self, x):
         x = x.squeeze(1)
-        pe = torch.zeros(min(x.size(0), self.max_steps), self.input_dim, device=self.device)
-        pe[:, 0::2] = torch.sin(x * self.omega)
-        pe[:, 1::2] = torch.cos(x * self.omega)
+        pe = torch.zeros(x.size(0), self.input_dim, device=self.device)
+        pe[:, 0::2] = torch.sin(100 * x * self.omega)
+        pe[:, 1::2] = torch.cos(100 * x * self.omega)
         pe = pe[:x.size(0)]
         
         return pe
