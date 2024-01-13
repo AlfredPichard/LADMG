@@ -2,11 +2,14 @@ import torch
 import dataset as ds
 import utils, train, diffusion
 import sys
+from torchinfo import summary
 
 if __name__ == "__main__":
 
-    DATA_PATH = "/data/atiam/triana/data/"
+    DATA_PATH = "/data/nils/minimal/encodec_24k"
 
+    ### Initalization
+    print("Initializing params...")
     parser = utils.Parser()
     cm = utils.CheckPointManager(name = parser.args.model, last_checkpoint=parser.args.checkpoint)
     tm = utils.TrainingManager(name = parser.args.train)
@@ -16,7 +19,7 @@ if __name__ == "__main__":
     optimizer = tm.get_optimizer(model)
     trainer = train.Trainer(model, cm, optimizer, loss, None, None)
     
-    dataset = ds.SimpleDataset(path=DATA_PATH, keys = ["encodec","metadata","clap"])
+    dataset = ds.SimpleDataset(path=DATA_PATH, keys=['encodec'], transforms=None, readonly=True)
 
     batch = parser.args.batch
 
@@ -29,11 +32,19 @@ if __name__ == "__main__":
 
     trainer = train.Trainer(model, cm, optimizer, loss, train_dataloader, valid_dataloader)
 
+    ### Print model summary
+    model_summary = summary(model, input_size=((batch, 128, 512) ,(batch,1,1)))
+    print(f"Model Summary : {model_summary}")
+
+    ### Load last model state
     if cm.last_checkpoint:
         trainer.load(cm.last_file)
         trainer.epoch = cm.last_epoch
+        print(f"Loaded existing model {cm.last_file}")
 
+    ### Train loop
     try:
+        print("Training...")
         if parser.args.epochs:
             for i in range(parser.args.epochs):
                 log = (trainer.epoch == parser.args.epochs_log)
