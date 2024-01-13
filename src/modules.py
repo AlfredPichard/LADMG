@@ -151,13 +151,11 @@ class EncodeBlock(nn.Module):
         padding = 2**(kernel_size_base2 - 1)
 
         self.encoder = nn.Conv1d(out_channels, out_channels, kernel_size, padding=padding, stride=2, device=self.device)
-        self.skip = None
 
     def forward(self, x, pos_enc):
         for i in range(len(self.blocks)):
             x = self.blocks[i](x, pos_enc)
-        self.skip = x
-        return self.activation(self.encoder(x))
+        return self.activation(self.encoder(x)), x
 
 
 class DecodeBlock(nn.Module):
