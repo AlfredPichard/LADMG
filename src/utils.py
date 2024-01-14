@@ -87,7 +87,7 @@ class CheckPointManager:
             if f[-3:] == ".pt" and f.split("_iter")[0] == self.config["name"]:
                 iteration = int(f.split("_iter")[1].split("_")[0])
                 epoch = int(f[:-3].split("_epoch")[-1])
-                if last[0] is None or iteration > last[1] or(iteration > last[1] and epoch > last_epoch):
+                if last[0] is None or iteration > last[1] or(iteration == last[1] and epoch > last_epoch):
                     last = f, iteration
                     last_epoch = epoch
         return last
