@@ -9,7 +9,7 @@ Low level - Encoding and Ada Group Normalization
 """
 #############################################
 class PositionalEncoding(nn.Module):
-    def __init__(self, input_dim, max_steps = 10000, device='cpu'):
+    def __init__(self, input_dim, max_steps = 5000, device='cpu'):
         super(PositionalEncoding, self).__init__()
         self.device = device
         self.input_dim = input_dim
@@ -18,9 +18,9 @@ class PositionalEncoding(nn.Module):
 
     def forward(self, x):
         x = x.squeeze(1)
-        pe = torch.zeros(min(x.size(0), self.max_steps), self.input_dim, device=self.device)
-        pe[:, 0::2] = torch.sin(x * self.omega)
-        pe[:, 1::2] = torch.cos(x * self.omega)
+        pe = torch.zeros(x.size(0), self.input_dim, device=self.device)
+        pe[:, 0::2] = torch.sin(100 * x * self.omega)
+        pe[:, 1::2] = torch.cos(100 * x * self.omega)
         pe = pe[:x.size(0)]
         
         return pe
@@ -151,13 +151,11 @@ class EncodeBlock(nn.Module):
         padding = 2**(kernel_size_base2 - 1)
 
         self.encoder = nn.Conv1d(out_channels, out_channels, kernel_size, padding=padding, stride=2, device=self.device)
-        self.skip = None
 
     def forward(self, x, pos_enc):
         for i in range(len(self.blocks)):
             x = self.blocks[i](x, pos_enc)
-        self.skip = x
-        return self.activation(self.encoder(x))
+        return self.activation(self.encoder(x)), x
 
 
 class DecodeBlock(nn.Module):

@@ -87,7 +87,7 @@ class CheckPointManager:
             if f[-3:] == ".pt" and f.split("_iter")[0] == self.config["name"]:
                 iteration = int(f.split("_iter")[1].split("_")[0])
                 epoch = int(f[:-3].split("_epoch")[-1])
-                if last[0] is None or iteration > last[1] or(iteration > last[1] and epoch > last_epoch):
+                if last[0] is None or iteration > last[1] or(iteration == last[1] and epoch > last_epoch):
                     last = f, iteration
                     last_epoch = epoch
         return last
@@ -167,7 +167,7 @@ class Parser:
     LOG_EPOCHS = 10
     MODEL = None
     TRAINING = 'default'
-    BATCH = 64
+    BATCH = 16
 
     def __init__(self):
         self.parser = argparse.ArgumentParser(description='Train latent audio diffusion model for music generation')

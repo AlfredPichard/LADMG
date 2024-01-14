@@ -28,9 +28,11 @@ class Trainer:
             a = torch.rand((batch_size)).view(batch_size, 1, 1).to(self.DEVICE)
             z_0 = self.model.sample(batch_size, z_1.shape[-1]).to(self.DEVICE)
             z_a = ((1 - a)*z_0 + a*z_1)
+
             diff_pred = self.model(z_a, a)
             real_diff = z_1 - z_0
             loss = self.loss_function(diff_pred, real_diff)
+
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
@@ -70,7 +72,7 @@ class Trainer:
                         running_loss / (i+1),
                         self.epoch)
         audio = self.model.inference()
-        self.logger.add_audio('inference epoch' + str(self.epoch - 1), audio, sample_rate = self.model.encodec.sr)
+        self.logger.add_audio("audio samples", audio, sample_rate = self.model.encodec.sr, global_step = self.epoch )
         self.logger.flush()
         self.logger.close()
 
