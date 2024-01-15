@@ -58,8 +58,8 @@ if __name__ == '__main__':
 
     DATA_PATH = "/data/nils/minimal/encodec_24k"
     
-    dataset = ds.SimpleDataset(path=DATA_PATH, keys=['waveform', 'encodec'], transforms=None, readonly=True)
-    print(dataset[0]['waveform'])
+    dataset = ds.SimpleDataset(path=DATA_PATH, keys=['encodec','metadata','clap'], transforms=None, readonly=True)
+    print(dataset[0])
 
     '''clap = CLAP()
     text_data = ["I love the contrastive learning", "I love the pretrain model"] 
