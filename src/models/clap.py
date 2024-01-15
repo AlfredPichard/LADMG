@@ -39,5 +39,31 @@ class CLAP(nn.Module):
         return (x * 32767.).astype(np.int16)
 
 if __name__ == '__main__':
-    clap = CLAP()
-    print('done')
+
+    import sys
+    import os
+    
+    # getting the name of the directory
+    # where the this file is present.
+    current = os.path.dirname(os.path.realpath(__file__))
+    
+    # Getting the parent directory name
+    # where the current directory is present.
+    parent = os.path.dirname(current)
+    
+    # adding the parent directory to 
+    # the sys.path.
+    sys.path.append(parent)
+    import dataset as ds
+
+    DATA_PATH = "/data/nils/minimal/encodec_24k"
+    
+    dataset = ds.SimpleDataset(path=DATA_PATH, keys=['waveform', 'encodec'], transforms=None, readonly=True)
+    print(dataset[0]['waveform'])
+
+    '''clap = CLAP()
+    text_data = ["I love the contrastive learning", "I love the pretrain model"] 
+    text_embed = clap.embedding_from_text(text_data)
+    print(text_embed)
+    print(text_embed.shape)
+    print('done')'''
