@@ -7,15 +7,16 @@ class CLAP(nn.Module):
 
     def __init__(self, enable_fusion=False, checkpoint=None):
         super(CLAP, self).__init__()
-        self.model = laion_clap.CLAP_Module(enable_fusion=enable_fusion)
+        self.model = laion_clap.CLAP_Module(enable_fusion=False, amodel='HTSAT-base')
         if checkpoint:
             try:
+                self.model.load_ckpt(checkpoint)
                 pass
             except Exception as e:
                 print(e)
-                self.model = None
+                self.model.load_ckpt("/data/nils/repos/CLAP/music_audioset_epoch_15_esc_90.14.pt")
         else:
-            self.model.load_ckpt()
+            self.model.load_ckpt("/data/nils/repos/CLAP/music_audioset_epoch_15_esc_90.14.pt")
 
     def embedding_from_waveform(self, x):
         audio_data = torch.from_numpy(self.int16_to_float32(self.float32_to_int16(x))).float()
