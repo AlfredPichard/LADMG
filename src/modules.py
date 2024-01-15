@@ -1,7 +1,7 @@
 import numpy as np
 import torch, torchvision, torchaudio
 import torch.nn as nn
-
+from models.clap import CLAP
 
 #############################################
 """
@@ -24,7 +24,25 @@ class PositionalEncoding(nn.Module):
         pe = pe[:x.size(0)]
         
         return pe
+    
+class ConvCLAP(nn.Module):
+    def __init__(self, in_channels = None, out_channels = 32, same_dim = False, device='cpu'):
+        super(ConvCLAP, self).__init__()
+        self.device = device
+        self.out_channels = out_channels
+        if in_channels:
+            self.in_channels = in_channels
+        else:
+            self.in_channels = self.out_channels
+        self.conv_in = nn.Conv1d(self.in_channels, self.out_channels, 3, padding='same')
+        if same_dim:
+            self.conv_out = nn.Conv1d(self.out_channels, self.out_channels, 3, padding='same')
+        else:
+            self.conv_out = nn.Conv1d(self.out_channels, self.out_channels, 3, padding=1, stride=2)
+        self.activation = nn.SiLU()
 
+    def forward(self, embedding):
+        return self.activation(self.conv_out(self.conv_in(embedding)))
 
 class AdaGN(nn.Module):
     def __init__(self, in_channels, time_emb_dim, n_groups=None, device='cpu'):
@@ -35,9 +53,10 @@ class AdaGN(nn.Module):
 
         self.groupnorm = nn.GroupNorm(n_groups, in_channels, affine=True, eps=1e-5, device=self.device)
         self.lin_time_proj = nn.Linear(time_emb_dim, 2*in_channels, device=self.device)
+        self.z_proj = nn.Linear(CLAP.CLAP_DIM, 2*in_channels, device=self.device)
         self.in_channels = in_channels
 
-    def forward(self, x, pos_enc):
+    def forward(self, x, pos_enc, z_cond):
         '''
         with: 
             D = input dimension
@@ -53,7 +72,10 @@ class AdaGN(nn.Module):
         '''
         t = self.lin_time_proj(pos_enc).unsqueeze(2).repeat(1,1,x.shape[-1])
         t_a, t_b = t[:,:self.in_channels,:], t[:,self.in_channels:,:]
-        return t_a*self.groupnorm(x) + t_b
+        if not z_cond:
+            z_cond = torch.zeros_like(t_a)
+        z_cond = self.z_proj(z_cond).unsqueeze(2).repeat(1,1,x.shape[-1])
+        return z_cond * (t_a*self.groupnorm(x) + t_b)
 
 
 
@@ -63,7 +85,7 @@ Higher level - Elementary blocks
 """
 #############################################
 class ConvBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, time_emb_dim, n_groups, kernel_size_base2, device='cpu'):
+    def __init__(self, in_channels, out_channels, time_emb_dim, n_groups, kernel_size_base2, convclap = False, emb_input = False, device='cpu'):
         super(ConvBlock, self).__init__()            
         if not isinstance(kernel_size_base2,int) or not kernel_size_base2 > 0:
             kernel_size_base2 = 1
@@ -76,9 +98,9 @@ class ConvBlock(nn.Module):
         self.norm = AdaGN(out_channels, time_emb_dim, n_groups=n_groups, device=self.device)
         self.activation = nn.SiLU()
 
-    def forward(self, x, pos_enc):
+    def forward(self, x, pos_enc, z_cond):
         x = self.conv(x)
-        x = self.norm(x, pos_enc)
+        x = self.norm(x, pos_enc, z_cond)
         return self.activation(x) + x
 
 
@@ -102,9 +124,9 @@ class BottomBlock(nn.Module):
 
         self.decoder = nn.ConvTranspose1d(out_channels, out_channels // 2, kernel_size, padding=padding, stride=2, output_padding=1, device=self.device)
 
-    def forward(self, x, pos_enc):
+    def forward(self, x, pos_enc, z_cond):
         for i in range(len(self.blocks)):
-            x = self.blocks[i](x, pos_enc)
+            x = self.blocks[i](x, pos_enc, z_cond)
         return self.activation(self.decoder(x))
 
 
@@ -121,10 +143,10 @@ class OutBlock(nn.Module):
         )
         self.activation = nn.SiLU()
 
-    def forward(self, x, pos_enc, skip):
+    def forward(self, x, pos_enc, skip, z_cond):
         x = torch.cat((skip, x), dim=-2)
         for i in range(len(self.blocks)):
-            x = self.blocks[i](x, pos_enc)
+            x = self.blocks[i](x, pos_enc, z_cond)
         return x
 
 
@@ -152,9 +174,9 @@ class EncodeBlock(nn.Module):
 
         self.encoder = nn.Conv1d(out_channels, out_channels, kernel_size, padding=padding, stride=2, device=self.device)
 
-    def forward(self, x, pos_enc):
+    def forward(self, x, pos_enc, z_cond):
         for i in range(len(self.blocks)):
-            x = self.blocks[i](x, pos_enc)
+            x = self.blocks[i](x, pos_enc, z_cond)
         return self.activation(self.encoder(x)), x
 
 
@@ -176,10 +198,10 @@ class DecodeBlock(nn.Module):
 
         self.decoder = nn.ConvTranspose1d(out_channels, out_channels // 2, kernel_size, padding=padding, stride=2, output_padding=1, device=self.device)
 
-    def forward(self, x, pos_enc, skip):
+    def forward(self, x, pos_enc, skip, z_cond):
         x = torch.cat((skip, x), dim=-2)
         for i in range(len(self.blocks)):
-            x = self.blocks[i](x, pos_enc)
+            x = self.blocks[i](x, pos_enc, z_cond)
         return self.activation(self.decoder(x))
 
 
