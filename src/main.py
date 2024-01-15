@@ -6,7 +6,7 @@ from torchinfo import summary
 
 if __name__ == "__main__":
 
-    DATA_PATH = "/data/nils/minimal/encodec_24k"
+    DATA_PATH = "/data/nils/minimal/encodec_24k_BT"
 
     ### Initalization
     print("Initializing params...")

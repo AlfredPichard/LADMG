@@ -173,3 +173,6 @@ other
 
 # Macos specigfics
 .DS_Store
+
+#CLAP cache
+*.tmp

@@ -2,8 +2,11 @@ import torch
 import torch.nn as nn
 from models.unet import UNet
 from models.encodec_model import WrappedEncodec
+from models.clap import CLAP
 
 class UNetDiffusion(nn.Module):
+
+    CLAP_CHECKPOINT = None
 
     def __init__(self, n_channels = 128, alpha_steps = 100, time_emb_dim=16, start_channels_base2=6, n_layers=5, kernel_size_base2=1, n_groups=None, device='cpu'):
         super(UNetDiffusion, self).__init__()
@@ -15,6 +18,7 @@ class UNetDiffusion(nn.Module):
                           kernel_size_base2 = kernel_size_base2, 
                           n_groups = n_groups, device=device)
         self.encodec = WrappedEncodec().to(device)
+        self.clap = CLAP(checkpoint=self.CLAP_CHECKPOINT)
         self.alpha_steps = alpha_steps
         self._config_prior(torch.zeros(n_channels, 1).to(device), torch.ones(n_channels, 1).to(device))
         self.device = device
