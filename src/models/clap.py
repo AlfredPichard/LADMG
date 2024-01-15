@@ -56,7 +56,7 @@ if __name__ == '__main__':
     sys.path.append(parent)
     import dataset as ds
 
-    DATA_PATH = "/data/nils/minimal/encodec_24k"
+    DATA_PATH = "/data/nils/minimal/encodec_24k_BT"
     
     dataset = ds.SimpleDataset(path=DATA_PATH, keys=['encodec','metadata','clap'], transforms=None, readonly=True)
     print(dataset[0])
