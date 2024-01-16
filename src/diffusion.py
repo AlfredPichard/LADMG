@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from models.unet import UNet
 from models.encodec_model import WrappedEncodec
+from models.clap import CLAP
 
 class UNetDiffusion(nn.Module):
 
@@ -15,6 +16,7 @@ class UNetDiffusion(nn.Module):
                           kernel_size_base2 = kernel_size_base2, 
                           n_groups = n_groups, device=device)
         self.encodec = WrappedEncodec().to(device)
+        self.clap = CLAP()
         self.alpha_steps = alpha_steps
         self._config_prior(torch.zeros(n_channels, 1).to(device), torch.ones(n_channels, 1).to(device))
         self.device = device
@@ -23,18 +25,26 @@ class UNetDiffusion(nn.Module):
         self.mean = mean
         self.std = std
 
-    def forward(self, x, t):
-        return self.model(x, t)
+    def forward(self, x, t, clap = None):
+        return self.model(x, t, clap)
     
-    def inference(self, x_0 = None, n_batch = 1, n_frames = 10 * 128, T = None):
+    def inference(self, x_0 = None, n_batch = 1, n_frames = 10 * 128, T = None, audio_cond=None, text_cond=None):
         if T is None or not isinstance(T, int):
             T = self.alpha_steps
         if x_0 is None:
             x_0 = self.sample(n_batch, n_frames)
+        if audio_cond:
+            z_cond = self.clap.embedding_from_waveform(audio_cond)
+            n_batch = audio_cond.shape[0]
+        elif text_cond:
+            z_cond = self.clap.embedding_from_text(text_cond)
+            n_batch = audio_cond.shape[0]
+        else:
+            z_cond = None
         denoised_samples = [x_0]
         alpha = torch.arange(T).to(self.device)/T
         for t in range(1,T,1):
-            x_a = denoised_samples[-1] + (alpha[t] - alpha[t-1])*self.forward(denoised_samples[-1],alpha[t]*torch.ones(n_batch, 1, device=self.device))
+            x_a = denoised_samples[-1] + (alpha[t] - alpha[t-1])*self.forward(denoised_samples[-1],alpha[t]*torch.ones(n_batch, 1, device=self.device), clap = z_cond)
             denoised_samples.append(x_a)
         return self.encodec.decode(denoised_samples[-1])
     

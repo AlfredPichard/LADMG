@@ -45,7 +45,7 @@ class ConvCLAP(nn.Module):
         return self.activation(self.conv_out(self.conv_in(embedding)))
 
 class AdaGN(nn.Module):
-    def __init__(self, in_channels, time_emb_dim, n_groups=None, device='cpu'):
+    def __init__(self, in_channels, time_emb_dim, n_groups=None, dropout_p = 0.5, device='cpu'):
         super(AdaGN, self).__init__()
         if n_groups is None:
             n_groups = in_channels
@@ -54,6 +54,7 @@ class AdaGN(nn.Module):
         self.groupnorm = nn.GroupNorm(n_groups, in_channels, affine=True, eps=1e-5, device=self.device)
         self.lin_time_proj = nn.Linear(time_emb_dim, 2*in_channels, device=self.device)
         self.z_proj = nn.Linear(CLAP.CLAP_DIM, 2*in_channels, device=self.device)
+        self.dropout = nn.Dropout(p = dropout_p)
         self.in_channels = in_channels
 
     def forward(self, x, pos_enc, z_cond):
@@ -74,7 +75,7 @@ class AdaGN(nn.Module):
         t_a, t_b = t[:,:self.in_channels,:], t[:,self.in_channels:,:]
         if not z_cond:
             z_cond = torch.zeros_like(t_a)
-        z_cond = self.z_proj(z_cond).unsqueeze(2).repeat(1,1,x.shape[-1])
+        z_cond = self.z_proj(self.dropout(z_cond)).unsqueeze(2).repeat(1,1,x.shape[-1])
         return z_cond * (t_a*self.groupnorm(x) + t_b)
 
 
@@ -85,7 +86,7 @@ Higher level - Elementary blocks
 """
 #############################################
 class ConvBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, time_emb_dim, n_groups, kernel_size_base2, convclap = False, emb_input = False, device='cpu'):
+    def __init__(self, in_channels, out_channels, time_emb_dim, n_groups, kernel_size_base2, dropout_p = 0.2, device='cpu'):
         super(ConvBlock, self).__init__()            
         if not isinstance(kernel_size_base2,int) or not kernel_size_base2 > 0:
             kernel_size_base2 = 1
@@ -97,8 +98,12 @@ class ConvBlock(nn.Module):
         self.conv = nn.Conv1d(in_channels, out_channels, kernel_size, padding=padding, device=self.device)
         self.norm = AdaGN(out_channels, time_emb_dim, n_groups=n_groups, device=self.device)
         self.activation = nn.SiLU()
+        if not dropout_p:
+            dropout_p = 0
+        self.dropout = nn.Dropout(dropout_p)
 
     def forward(self, x, pos_enc, z_cond):
+        x = self.dropout(x)
         x = self.conv(x)
         x = self.norm(x, pos_enc, z_cond)
         return self.activation(x) + x

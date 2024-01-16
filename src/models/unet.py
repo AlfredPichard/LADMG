@@ -51,16 +51,16 @@ class UNet(nn.Module):
         self.last_conv = nn.Conv1d(2**(start_channels_base2), channels, 1, device=device)
         self.pos_encoding = PositionalEncoding(time_emb_dim, device = device)
         
-    def forward(self, x, t):
+    def forward(self, x, t, clap):
         pos_enc = self.pos_encoding(t)
         skip_connections = []
 
         for i in range(self.n_layers - 1):
-            x, skip = self.encode[i](x, pos_enc)
+            x, skip = self.encode[i](x, pos_enc, clap)
             skip_connections.append(skip)
 
-        x = self.bottom(x, pos_enc)
+        x = self.bottom(x, pos_enc, clap)
         for i in range(self.n_layers - 2, -1, -1):
-            x = self.decode[i](x, pos_enc, skip_connections.pop())
+            x = self.decode[i](x, pos_enc, skip_connections.pop(), clap)
 
         return self.last_conv(x)
