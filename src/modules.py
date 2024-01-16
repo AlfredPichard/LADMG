@@ -76,7 +76,7 @@ class AdaGN(nn.Module):
         if z_cond is None:
             z_cond = torch.zeros_like(t_a)
         else:
-            batch_mask = self.batch_dropout(torch.zeros(z_cond.shape[0], requires_grad=False))
+            batch_mask = torch.unsqueeze(self.batch_dropout(torch.ones(z_cond.shape[0], requires_grad=False)), 1)
             z_cond = batch_mask * z_cond
         z_cond = self.z_proj(z_cond).unsqueeze(2).repeat(1,1,x.shape[-1])
         return z_cond * (t_a*self.groupnorm(x) + t_b)
