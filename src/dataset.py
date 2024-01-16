@@ -55,7 +55,7 @@ def to_pow2(x):
 def seq_len(seq):
     return seq.shape[-1]
 
-def collate_fn_padd(batch, tensor_keys = ['encodec']):
+def collate_fn_padd(batch, tensor_keys = ['encodec', 'clap']):
     # handling batch creation in dataloader
     if len(batch) > 1:
         keys = batch[0].keys()
@@ -72,6 +72,7 @@ def collate_fn_padd(batch, tensor_keys = ['encodec']):
             to_pad = out_seq_len - x_len
             pad = (to_pad//2, to_pad - to_pad//2)
             out['encodec'][n] = torch.nn.functional.pad(torch.from_numpy(x), pad)
+            out['clap'][n] = torch.from_numpy(out['clap'])
         for key in tensor_keys:
             out[key] = torch.stack(out[key])
         return out
@@ -82,6 +83,7 @@ def collate_fn_padd(batch, tensor_keys = ['encodec']):
         to_pad = out_seq_len - x_len
         pad = (to_pad//2, to_pad - to_pad//2)
         out['encodec'] = torch.nn.functional.pad(torch.tensor(out['encodec']), pad).unsqueeze(0)
+        out['clap'] = torch.tensor(out['clap'])
         return out
 
         
