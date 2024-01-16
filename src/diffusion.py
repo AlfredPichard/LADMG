@@ -28,13 +28,16 @@ class UNetDiffusion(nn.Module):
     def forward(self, x, t, clap = None):
         return self.model(x, t, clap)
     
-    def inference(self, x_0 = None, n_batch = 1, n_frames = 1024, T = None, audio_cond = None, text_cond = None):
+    def inference(self, x_0 = None, n_batch = 1, n_frames = 1024, T = None, audio_cond = None, text_cond = None, files_cond = None):
         if T is None or not isinstance(T, int):
             T = self.alpha_steps
         if x_0 is None:
             x_0 = self.sample(n_batch, n_frames)
         if audio_cond:
             z_cond = self.clap.embedding_from_waveform(audio_cond, device = self.device)
+            n_batch = z_cond.shape[0]
+        elif files_cond:
+            z_cond = self.clap.embedding_from_files(files_cond, device = self.device)
             n_batch = z_cond.shape[0]
         elif text_cond:
             z_cond = self.clap.embedding_from_text(text_cond, device = self.device)
