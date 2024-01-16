@@ -74,7 +74,7 @@ class AdaGN(nn.Module):
         t = self.lin_time_proj(pos_enc).unsqueeze(2).repeat(1,1,x.shape[-1])
         t_a, t_b = t[:,:self.in_channels,:], t[:,self.in_channels:,:]
         if z_cond is None:
-            z_cond = torch.zeros_like(t_a)
+            z_cond = torch.zeros((x.shape[0], CLAP.CLAP_DIM))
         else:
             batch_mask = torch.unsqueeze(self.batch_dropout(torch.ones(z_cond.shape[0], requires_grad=False)), 1)
             z_cond = batch_mask * z_cond

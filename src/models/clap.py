@@ -19,17 +19,17 @@ class CLAP(nn.Module):
         else:
             self.model.load_ckpt("/data/nils/repos/CLAP/music_audioset_epoch_15_esc_90.14.pt")
 
-    def embedding_from_waveform(self, x):
+    def embedding_from_waveform(self, x, device = 'cpu'):
         audio_data = torch.from_numpy(self.int16_to_float32(self.float32_to_int16(x))).float()
-        audio_embed = self.model.get_audio_embedding_from_data(x = audio_data, use_tensor=True)
+        audio_embed = self.model.get_audio_embedding_from_data(x = audio_data, use_tensor=True).to(device)
         return audio_embed
     
-    def embedding_from_files(self, audio_files):
-        audio_embed = self.model.get_audio_embedding_from_filelist(x = audio_files, use_tensor=True)
+    def embedding_from_files(self, audio_files, device = 'cpu'):
+        audio_embed = self.model.get_audio_embedding_from_filelist(x = audio_files, use_tensor=True).to(device)
         return audio_embed
     
-    def embedding_from_text(self, text):
-        text_embed = self.model.get_text_embedding(text, use_tensor=True)
+    def embedding_from_text(self, text, device='cpu'):
+        text_embed = self.model.get_text_embedding(text, use_tensor=True).to(device)
         return text_embed
 
     def int16_to_float32(self, x):

@@ -28,23 +28,23 @@ class UNetDiffusion(nn.Module):
     def forward(self, x, t, clap = None):
         return self.model(x, t, clap)
     
-    def inference(self, x_0 = None, n_batch = 1, n_frames = 1024, T = None, audio_cond=None, text_cond=None):
+    def inference(self, x_0 = None, n_batch = 1, n_frames = 1024, T = None, audio_cond = None, text_cond = None):
         if T is None or not isinstance(T, int):
             T = self.alpha_steps
         if x_0 is None:
             x_0 = self.sample(n_batch, n_frames)
         if audio_cond:
-            z_cond = self.clap.embedding_from_waveform(audio_cond)
-            n_batch = audio_cond.shape[0]
+            z_cond = self.clap.embedding_from_waveform(audio_cond, device = self.device)
+            n_batch = z_cond.shape[0]
         elif text_cond:
-            z_cond = self.clap.embedding_from_text(text_cond)
-            n_batch = audio_cond.shape[0]
+            z_cond = self.clap.embedding_from_text(text_cond, device = self.device)
+            n_batch = z_cond.shape[0]
         else:
             z_cond = None
         denoised_samples = [x_0]
         alpha = torch.arange(T).to(self.device)/T
         for t in range(1,T,1):
-            x_a = denoised_samples[-1] + (alpha[t] - alpha[t-1])*self.forward(denoised_samples[-1],alpha[t]*torch.ones(n_batch, 1, device=self.device), clap = z_cond)
+            x_a = denoised_samples[-1] + (alpha[t] - alpha[t-1])*self.forward(denoised_samples[-1],alpha[t]*torch.ones(n_batch, 1, 1, device=self.device), clap = z_cond)
             denoised_samples.append(x_a)
         return self.encodec.decode(denoised_samples[-1])
     
