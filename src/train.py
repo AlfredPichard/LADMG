@@ -28,8 +28,12 @@ class Trainer:
             a = torch.rand((batch_size)).view(batch_size, 1, 1).to(self.DEVICE)
             z_0 = self.model.sample(batch_size, z_1.shape[-1]).to(self.DEVICE)
             z_a = ((1 - a)*z_0 + a*z_1)
+            try:
+                clap = data['clap'].to(self.DEVICE)
+            except:
+                clap = None
 
-            diff_pred = self.model(z_a, a)
+            diff_pred = self.model(z_a, a, clap = clap)
             real_diff = z_1 - z_0
             loss = self.loss_function(diff_pred, real_diff)
 
@@ -57,8 +61,14 @@ class Trainer:
             a = torch.rand((batch_size)).view(batch_size, 1, 1).to(self.DEVICE)
             z_0 = self.model.sample(batch_size, z_1.shape[-1]).to(self.DEVICE)
             z_a = ((1 - a)*z_0 + a*z_1)
-            diff_pred = self.model(z_a, a)
+            try:
+                clap = data['clap'].to(self.DEVICE)
+            except:
+                clap = None
+
+            diff_pred = self.model(z_a, a, clap = clap)
             real_diff = z_1 - z_0
+
             loss = self.loss_function(diff_pred, real_diff)
             self.optimizer.zero_grad()
             loss.backward()
