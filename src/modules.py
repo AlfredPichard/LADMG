@@ -53,7 +53,7 @@ class AdaGN(nn.Module):
 
         self.groupnorm = nn.GroupNorm(n_groups, in_channels, affine=True, eps=1e-5, device=self.device)
         self.lin_time_proj = nn.Linear(time_emb_dim, 2*in_channels, device=self.device)
-        self.z_proj = nn.Linear(CLAP.CLAP_DIM, 2*in_channels, device=self.device)
+        self.z_proj = nn.Linear(CLAP.CLAP_DIM, in_channels, device=self.device)
         self.dropout = nn.Dropout(p = dropout_p)
         self.in_channels = in_channels
 
@@ -73,7 +73,7 @@ class AdaGN(nn.Module):
         '''
         t = self.lin_time_proj(pos_enc).unsqueeze(2).repeat(1,1,x.shape[-1])
         t_a, t_b = t[:,:self.in_channels,:], t[:,self.in_channels:,:]
-        if not z_cond:
+        if z_cond is None:
             z_cond = torch.zeros_like(t_a)
         z_cond = self.z_proj(self.dropout(z_cond)).unsqueeze(2).repeat(1,1,x.shape[-1])
         return z_cond * (t_a*self.groupnorm(x) + t_b)

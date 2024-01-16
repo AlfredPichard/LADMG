@@ -72,7 +72,7 @@ def collate_fn_padd(batch, tensor_keys = ['encodec', 'clap']):
             to_pad = out_seq_len - x_len
             pad = (to_pad//2, to_pad - to_pad//2)
             out['encodec'][n] = torch.nn.functional.pad(torch.from_numpy(x), pad)
-            out['clap'][n] = torch.from_numpy(out['clap'])
+            out['clap'][n] = torch.from_numpy(out['clap'][n])
         for key in tensor_keys:
             out[key] = torch.stack(out[key])
         return out
