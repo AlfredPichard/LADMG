@@ -28,7 +28,7 @@ class CheckPointManager:
     LOG_DIR = os.path.join(REP + "/log")
     DEVICE = torch.device("cuda:2")
 
-    def __init__(self, name = None, last_checkpoint = False):
+    def __init__(self, name = None, last_checkpoint = False, use_bt_conditioning=False):
         '''
         args:
             name: name of configuration in config/config.json
@@ -48,7 +48,10 @@ class CheckPointManager:
                 self.config = data[int(name)]
             except:
                 # If no configuration corresponds, return first configuration (which is default configuration)
-                self.config = data[0]
+                if use_bt_conditioning:
+                    self.config = data[1]
+                else:
+                    self.config = data[0]
         f.close()
 
         last_file, last_iter = self.get_last_checkpoint()
@@ -178,5 +181,5 @@ class Parser:
         self.parser.add_argument('-m', '--model', type=str, default=self.MODEL, dest='model', required=False, nargs='?', help='Model configuration to load')
         self.parser.add_argument('-t', '--training', type=str, default=self.TRAINING, dest='train', required=False, nargs='?', help='Training configuration to load')
         self.parser.add_argument('-b', '--batch', type=int, default=self.BATCH, dest='batch', required=False, nargs='?', help='Training batch size')
-        # Specific arguments
+        self.parser.add_argument('-bt', '--bt_conditioning', required=False, dest='use_bt_conditioning', action='store_const', const=True, default=False, help='Train with beattrack conditioning')
         self.args = self.parser.parse_args()

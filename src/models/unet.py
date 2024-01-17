@@ -19,7 +19,7 @@ class UNet(nn.Module):
                 kernel_size_base2=kernel_size_base2, 
                 device = device),
             *[EncodeBlock(
-                in_channels=2**(min(start_channels_base2 + i, 10)), 
+                in_channels=2**(start_channels_base2 + i), 
                 time_emb_dim=time_emb_dim, 
                 n_groups=n_groups, 
                 kernel_size_base2=kernel_size_base2, 
@@ -27,7 +27,7 @@ class UNet(nn.Module):
             ])
         
         self.bottom = BottomBlock(
-            in_channels=2**min(start_channels_base2 + n_layers - 2, 10), 
+            in_channels=2**(start_channels_base2 + n_layers - 2), 
             time_emb_dim=time_emb_dim, 
             n_groups=n_groups, 
             kernel_size_base2=kernel_size_base2,
@@ -41,7 +41,7 @@ class UNet(nn.Module):
                 kernel_size_base2=kernel_size_base2, 
                 device = device),
             *[DecodeBlock(
-                    in_channels=2**(min(start_channels_base2 + i, 10)),
+                    in_channels=2**(start_channels_base2 + i),
                     time_emb_dim=time_emb_dim, 
                     n_groups=n_groups,
                     kernel_size_base2=kernel_size_base2,
@@ -51,7 +51,7 @@ class UNet(nn.Module):
         self.last_conv = nn.Conv1d(2**(start_channels_base2), channels, 1, device=device)
         self.pos_encoding = PositionalEncoding(time_emb_dim, device = device)
         
-    def forward(self, x, t):
+    def forward(self, x, t, y=None):
         pos_enc = self.pos_encoding(t)
         skip_connections = []
 

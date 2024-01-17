@@ -11,7 +11,11 @@ if __name__ == "__main__":
     ### Initalization
     print("Initializing params...")
     parser = utils.Parser()
-    cm = utils.CheckPointManager(name = parser.args.model, last_checkpoint=parser.args.checkpoint)
+    cm = utils.CheckPointManager(
+        name=parser.args.model, 
+        last_checkpoint=parser.args.checkpoint, 
+        use_bt_conditioning=parser.args.use_bt_conditioning
+    )
     tm = utils.TrainingManager(name = parser.args.train)
     model = cm.get_model()
     loss = cm.get_loss()
@@ -19,7 +23,7 @@ if __name__ == "__main__":
     optimizer = tm.get_optimizer(model)
     trainer = train.Trainer(model, cm, optimizer, loss, None, None)
     
-    dataset = ds.SimpleDataset(path=DATA_PATH, keys=['encodec'], transforms=None, readonly=True)
+    dataset = ds.SimpleDataset(path=DATA_PATH, keys=['encodec', 'metadata'], transforms=None, readonly=True)
 
     batch = parser.args.batch
 
@@ -33,7 +37,7 @@ if __name__ == "__main__":
     trainer = train.Trainer(model, cm, optimizer, loss, train_dataloader, valid_dataloader)
 
     ### Print model summary
-    model_summary = summary(model, input_size=((batch, 128, 512) ,(batch,1,1)))
+    model_summary = summary(model, input_size=((batch, 128, 1024), (batch, 1, 1), (batch, 1, 1024)))
     print(f"Model Summary : {model_summary}")
 
     ### Load last model state
