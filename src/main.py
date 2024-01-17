@@ -11,16 +11,18 @@ if __name__ == "__main__":
     ### Initalization
     print("Initializing params...")
     parser = utils.Parser()
-    cm = utils.CheckPointManager(name = parser.args.model, last_checkpoint=parser.args.checkpoint)
+    cm = utils.CheckPointManager(name = parser.args.model, last_checkpoint=parser.args.checkpoint, condition = parser.args.condition)
     tm = utils.TrainingManager(name = parser.args.train)
     model = cm.get_model()
     loss = cm.get_loss()
-    tm = utils.TrainingManager()
+    '''tm = utils.TrainingManager()
     optimizer = tm.get_optimizer(model)
-    trainer = train.Trainer(model, cm, optimizer, loss, None, None)
+    trainer = train.Trainer(model, cm, optimizer, loss, None, None)'''
     
-    dataset = ds.SimpleDataset(path=DATA_PATH, keys=['encodec'], transforms=None, readonly=True)
-
+    if parser.args.condition:
+        dataset = ds.SimpleDataset(path=DATA_PATH, keys=['encodec', 'clap'], transforms=None, readonly=True)
+    else:
+        dataset = ds.SimpleDataset(path=DATA_PATH, keys=['encodec'], transforms=None, readonly=True)
     batch = parser.args.batch
 
     train_dataset, valid_dataset= torch.utils.data.random_split(dataset, [0.8, 0.2])
@@ -30,7 +32,7 @@ if __name__ == "__main__":
     tm = utils.TrainingManager()
     optimizer = tm.get_optimizer(model)
 
-    trainer = train.Trainer(model, cm, optimizer, loss, train_dataloader, valid_dataloader)
+    trainer = train.Trainer(model, cm, optimizer, loss, train_dataloader, valid_dataloader, parser.args.condition)
 
     ### Print model summary
     model_summary = summary(model, input_size=((batch, 128, 512) ,(batch,1,1)))

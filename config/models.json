@@ -10,5 +10,17 @@
             "kernel_size_base2": 1,
             "n_groups": null
         }
+    },
+    {
+        "name": "diff_unet_simple_encodec_24_clap",
+        "model": "UNetDiffusion",
+        "loss": "MSE",
+        "args": {
+            "n_layers": 5,
+            "time_emb_dim": 64,
+            "start_channels_base2": 8,
+            "kernel_size_base2": 1,
+            "n_groups": null
+        }
     }
 ]
