@@ -2,6 +2,8 @@ import torch
 import lmdb 
 from audio_example import AudioExample
 import numpy as np
+from scipy import signal
+
 
 class SimpleDataset(torch.utils.data.Dataset):
 
@@ -49,11 +51,14 @@ class SimpleDataset(torch.utils.data.Dataset):
                     print("key: ",key," not found")
         return out
 
+
 def to_pow2(x):
     return int(2**np.ceil(np.log2(x)))
 
+
 def seq_len(seq):
     return seq.shape[-1]
+
 
 def collate_fn_padd(batch, tensor_keys = ['encodec']):
     # handling batch creation in dataloader
@@ -84,4 +89,30 @@ def collate_fn_padd(batch, tensor_keys = ['encodec']):
         out['encodec'] = torch.nn.functional.pad(torch.tensor(out['encodec']), pad).unsqueeze(0)
         return out
 
-        
+
+def phasor(timesteps, encodec_sample_rate=24000, frame_sample_rate=320, n_frames=1024):
+    resampled_timesteps = np.floor(np.array(timesteps)*encodec_sample_rate/frame_sample_rate).astype(int)
+    sawtooth_like = np.zeros(n_frames)
+
+    for k in range(1, len(resampled_timesteps)):
+        try:
+            t = np.linspace(0, 1, (resampled_timesteps[k] - resampled_timesteps[k-1]))
+            sawtooth_like[resampled_timesteps[k-1]:resampled_timesteps[k]] = 0.5*signal.sawtooth(2 * np.pi * t)+0.5
+        except ValueError:
+            pass
+    try:
+        last_t = np.linspace(0, 1, max(0, min(resampled_timesteps[-1]-resampled_timesteps[-2], n_frames-resampled_timesteps[-1])))
+        padding = np.zeros(max(0, n_frames-resampled_timesteps[-1]-len(last_t)))
+        sawtooth_like[resampled_timesteps[-1]:n_frames] = np.concatenate((0.5*signal.sawtooth(2 * np.pi * last_t)+0.5, padding))
+    except IndexError:
+        pass
+    
+    return sawtooth_like
+
+
+def phasor_from_bpm(bpm, encodec_sample_rate=24000, frame_sample_rate=320, n_frames=1024):
+    total_length_seconds = n_frames*frame_sample_rate/encodec_sample_rate
+    one_timestep = 60/bpm
+    n_timesteps = np.floor(total_length_seconds/one_timestep).astype(int)
+    timesteps = [one_timestep*i for i in range(n_timesteps)]
+    return phasor(timesteps, encodec_sample_rate,frame_sample_rate, n_frames)
