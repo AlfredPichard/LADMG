@@ -2,6 +2,7 @@ import torch
 from torch.utils.tensorboard import SummaryWriter
 import utils
 import numpy as np
+import dataset as ds
 
 class Trainer:
 
@@ -24,12 +25,14 @@ class Trainer:
         running_loss = 0.0
         batch_size = self.train_dataloader.batch_size
         for i, data in enumerate(self.train_dataloader):
+            metadata = data['metadata']
+            bt_conditioner = torch.from_numpy(np.array([ds.phasor(metadata[k]['BT_beat']) for k in range(batch_size)]))[:,None,:].float()
             z_1 = data['encodec'].to(self.DEVICE)
             a = torch.rand((batch_size)).view(batch_size, 1, 1).to(self.DEVICE)
             z_0 = self.model.sample(batch_size, z_1.shape[-1]).to(self.DEVICE)
             z_a = ((1 - a)*z_0 + a*z_1)
 
-            diff_pred = self.model(z_a, a)
+            diff_pred = self.model(z_a, a, bt_conditioner)
             real_diff = z_1 - z_0
             loss = self.loss_function(diff_pred, real_diff)
 
@@ -53,13 +56,17 @@ class Trainer:
         running_loss = 0.0
         batch_size = self.valid_dataloader.batch_size
         for i, data in enumerate(self.valid_dataloader):
+            metadata = data['metadata']
+            bt_conditioner = torch.from_numpy(np.array([ds.phasor(metadata[k]['BT_beat']) for k in range(batch_size)]))[:,None,:].float()
             z_1 = data['encodec'].to(self.DEVICE)
             a = torch.rand((batch_size)).view(batch_size, 1, 1).to(self.DEVICE)
             z_0 = self.model.sample(batch_size, z_1.shape[-1]).to(self.DEVICE)
             z_a = ((1 - a)*z_0 + a*z_1)
-            diff_pred = self.model(z_a, a)
+            
+            diff_pred = self.model(z_a, a, bt_conditioner)
             real_diff = z_1 - z_0
             loss = self.loss_function(diff_pred, real_diff)
+            
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
@@ -89,8 +96,8 @@ if __name__ == "__main__":
 
     import dataset as ds
 
-    path = "/data/atiam/triana/data/"
-    dataset = ds.SimpleDataset(path=path, keys = ["encodec","metadata","clap"])
+    path = "/data/nils/minimal/encodec_24k_BT"
+    dataset = ds.SimpleDataset(path=path, keys = ["encodec","metadata"])
 
     batch = 1
 
