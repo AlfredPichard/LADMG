@@ -168,6 +168,7 @@ class Parser:
     # Default values
     EPOCHS = None
     LOG_EPOCHS = 10
+    SAVE_CHECKPOINT_EPOCHS = 100
     MODEL = None
     TRAINING = 'default'
     BATCH = 16
@@ -178,6 +179,7 @@ class Parser:
         self.parser.add_argument('-c', '--checkpoint', required=False, dest='checkpoint', action='store_const', const=True, default=False, help='If possible start training from last checkpoint')
         self.parser.add_argument('-e', '--epochs', type=int, default=self.EPOCHS, dest='epochs', required=False, nargs='?', help='Specify training epochs, default is infinite')
         self.parser.add_argument('-l', '--log', type=int, default=self.LOG_EPOCHS, dest='epochs_log', required=False, nargs='?', help=f'Specify after how many epochs to log, default is {self.LOG_EPOCHS}')
+        self.parser.add_argument('-s', '--save_checkpoint', type=int, default=self.SAVE_CHECKPOINT_EPOCHS, dest='save_checkpoint_epochs', required=False, nargs='?', help=f'Specify after how many epochs to autosave checkpoint, default is {self.SAVE_CHECKPOINT_EPOCHS}')
         self.parser.add_argument('-m', '--model', type=str, default=self.MODEL, dest='model', required=False, nargs='?', help='Model configuration to load')
         self.parser.add_argument('-t', '--training', type=str, default=self.TRAINING, dest='train', required=False, nargs='?', help='Training configuration to load')
         self.parser.add_argument('-b', '--batch', type=int, default=self.BATCH, dest='batch', required=False, nargs='?', help='Training batch size')

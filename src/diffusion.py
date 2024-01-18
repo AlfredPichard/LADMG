@@ -32,7 +32,7 @@ class UNetDiffusion(nn.Module):
         
         self.encodec = WrappedEncodec().to(device)
         self.alpha_steps = alpha_steps
-        self._config_prior(torch.zeros(n_channels, 1).to(device), torch.ones(n_channels, 1).to(device))
+        self._config_prior(torch.zeros(n_channels, 1, device=device), torch.ones(n_channels, 1, device=device))
         self.device = device
 
     def _config_prior(self, mean, std):
@@ -52,7 +52,7 @@ class UNetDiffusion(nn.Module):
         if self.inference_bpm is not None:
             conditioner = torch.from_numpy(np.array([phasor_from_bpm(self.inference_bpm) for _ in range(n_batch)]))[:,None,:].float().to(self.device)
         denoised_samples = [x_0]
-        alpha = torch.arange(T).to(self.device)/T
+        alpha = torch.arange(T, device=self.device)/T
 
         for t in range(1,T,1):
             a = alpha[t]*torch.ones(n_batch, 1, device=self.device)
@@ -62,4 +62,4 @@ class UNetDiffusion(nn.Module):
         return self.encodec.decode(denoised_samples[-1])
     
     def sample(self, n_batch, n_frames):
-        return self.mean + self.std * torch.randn((n_batch, self.n_channels, n_frames)).to(self.device)
+        return self.mean + self.std * torch.randn((n_batch, self.n_channels, n_frames), device=self.device)

@@ -26,6 +26,7 @@ if __name__ == "__main__":
     dataset = ds.SimpleDataset(path=DATA_PATH, keys=['encodec', 'metadata'], transforms=None, readonly=True)
 
     batch = parser.args.batch
+    save_checkpoint_epochs = parser.args.save_checkpoint_epochs
 
     train_dataset, valid_dataset= torch.utils.data.random_split(dataset, [0.8, 0.2])
     train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size = batch, shuffle = True, collate_fn = ds.collate_fn_padd, drop_last=True)
@@ -55,6 +56,9 @@ if __name__ == "__main__":
                 trainer.train_one_epoch(log = True)
                 if log:
                     trainer.validate()
+                if trainer.epoch % save_checkpoint_epochs == 0:
+                    print("Autosaving checkpoint...")
+                    trainer.checkpoint()
             print('Training stopping, saving model')
             trainer.checkpoint()
             sys.exit()
@@ -64,6 +68,9 @@ if __name__ == "__main__":
                 trainer.train_one_epoch(log = True)
                 if log:
                     trainer.validate()
+                if trainer.epoch % save_checkpoint_epochs == 0:
+                    print("Autosaving checkpoint...")
+                    trainer.checkpoint()
     except KeyboardInterrupt:
         print('Training stopping, saving model')
         trainer.checkpoint()

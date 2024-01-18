@@ -32,8 +32,8 @@ class Trainer:
                 data=np.array([ds.phasor(metadata[k]['BT_beat']) for k in range(batch_size)]))
             bt_conditioner = torch.from_numpy(numpy_bt_conditioner)[:,None,:].float().to(self.DEVICE)         
             z_1 = data['encodec'].to(self.DEVICE)
-            a = torch.rand((batch_size)).view(batch_size, 1, 1).to(self.DEVICE)
-            z_0 = self.model.sample(batch_size, z_1.shape[-1]).to(self.DEVICE)
+            a = torch.rand((batch_size), device=self.DEVICE).view(batch_size, 1, 1)
+            z_0 = self.model.sample(batch_size, z_1.shape[-1])
             z_a = ((1 - a)*z_0 + a*z_1)
 
             diff_pred = self.model(z_a, a, bt_conditioner)
@@ -63,8 +63,8 @@ class Trainer:
             metadata = data['metadata']
             bt_conditioner = torch.from_numpy(np.array([ds.phasor(metadata[k]['BT_beat']) for k in range(batch_size)]))[:,None,:].float().to(self.DEVICE)
             z_1 = data['encodec'].to(self.DEVICE)
-            a = torch.rand((batch_size)).view(batch_size, 1, 1).to(self.DEVICE)
-            z_0 = self.model.sample(batch_size, z_1.shape[-1]).to(self.DEVICE)
+            a = torch.rand((batch_size), device=self.DEVICE).view(batch_size, 1, 1)
+            z_0 = self.model.sample(batch_size, z_1.shape[-1])
             z_a = ((1 - a)*z_0 + a*z_1)
             
             diff_pred = self.model(z_a, a, bt_conditioner)
