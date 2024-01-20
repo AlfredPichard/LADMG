@@ -16,7 +16,7 @@ class UNetDiffusion(nn.Module):
                           kernel_size_base2 = kernel_size_base2, 
                           n_groups = n_groups, device=device)
         self.encodec = WrappedEncodec().to(device)
-        self.clap = CLAP()
+        self.clap = [CLAP(device = device)]
         self.alpha_steps = alpha_steps
         self._config_prior(torch.zeros(n_channels, 1).to(device), torch.ones(n_channels, 1).to(device))
         self.device = device
@@ -28,19 +28,22 @@ class UNetDiffusion(nn.Module):
     def forward(self, x, t, clap = None):
         return self.model(x, t, clap)
     
-    def inference(self, x_0 = None, n_batch = 1, n_frames = 1024, T = None, audio_cond = None, text_cond = None, files_cond = None):
+    def inference(self, x_0 = None, n_batch = 1, n_frames = 1024, T = None, audio_cond = None, text_cond = None, files_cond = None, clap = None):
         if T is None or not isinstance(T, int):
             T = self.alpha_steps
         if x_0 is None:
             x_0 = self.sample(n_batch, n_frames)
         if audio_cond:
-            z_cond = self.clap.embedding_from_waveform(audio_cond, device = self.device)
+            z_cond = self.clap[0].embedding_from_waveform(audio_cond)
             n_batch = z_cond.shape[0]
         elif files_cond:
-            z_cond = self.clap.embedding_from_files(files_cond, device = self.device)
+            z_cond = self.clap[0].embedding_from_files(files_cond)
             n_batch = z_cond.shape[0]
         elif text_cond:
-            z_cond = self.clap.embedding_from_text(text_cond, device = self.device)
+            z_cond = self.clap[0].embedding_from_text(text_cond)
+            n_batch = z_cond.shape[0]
+        elif clap is not None:
+            z_cond = clap
             n_batch = z_cond.shape[0]
         else:
             z_cond = None

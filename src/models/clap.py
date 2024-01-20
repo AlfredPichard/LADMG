@@ -7,9 +7,10 @@ class CLAP(nn.Module):
 
     CLAP_DIM = 512
 
-    def __init__(self, enable_fusion=False, checkpoint=None):
+    def __init__(self, enable_fusion=False, checkpoint=None, device = 'cpu'):
         super(CLAP, self).__init__()
-        self.model = laion_clap.CLAP_Module(enable_fusion=False, amodel='HTSAT-base')
+        self.device = device
+        self.model = laion_clap.CLAP_Module(enable_fusion=False, amodel='HTSAT-base', device = self.device)
         if checkpoint:
             try:
                 self.model.load_ckpt(checkpoint)
@@ -19,17 +20,17 @@ class CLAP(nn.Module):
         else:
             self.model.load_ckpt("/data/nils/repos/CLAP/music_audioset_epoch_15_esc_90.14.pt")
 
-    def embedding_from_waveform(self, x, device = 'cpu'):
+    def embedding_from_waveform(self, x):
         audio_data = torch.from_numpy(self.int16_to_float32(self.float32_to_int16(x))).float()
-        audio_embed = self.model.get_audio_embedding_from_data(x = audio_data, use_tensor=True).to(device)
+        audio_embed = self.model.get_audio_embedding_from_data(x = audio_data, use_tensor=True).to(self.device)
         return audio_embed
     
-    def embedding_from_files(self, audio_files, device = 'cpu'):
-        audio_embed = self.model.get_audio_embedding_from_filelist(x = audio_files, use_tensor=True).to(device)
+    def embedding_from_files(self, audio_files):
+        audio_embed = self.model.get_audio_embedding_from_filelist(x = audio_files, use_tensor=True).to(self.device)
         return audio_embed
     
-    def embedding_from_text(self, text, device='cpu'):
-        text_embed = self.model.get_text_embedding(text, use_tensor=True).to(device)
+    def embedding_from_text(self, text):
+        text_embed = self.model.get_text_embedding(text, use_tensor=True).to(self.device)
         return text_embed
 
     def int16_to_float32(self, x):
