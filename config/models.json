@@ -16,7 +16,7 @@
         "model": "UNetDiffusion",
         "loss": "MSE",
         "args": {
-            "n_layers": 5,
+            "n_layers": 4,
             "time_emb_dim": 64,
             "start_channels_base2": 8,
             "kernel_size_base2": 1,

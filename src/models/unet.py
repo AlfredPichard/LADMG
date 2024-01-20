@@ -19,7 +19,7 @@ class UNet(nn.Module):
                 kernel_size_base2=kernel_size_base2, 
                 device = device),
             *[EncodeBlock(
-                in_channels=2**(min(start_channels_base2 + i, 10)), 
+                in_channels=2**(start_channels_base2 + i), 
                 time_emb_dim=time_emb_dim, 
                 n_groups=n_groups, 
                 kernel_size_base2=kernel_size_base2, 
@@ -27,7 +27,7 @@ class UNet(nn.Module):
             ])
         
         self.bottom = BottomBlock(
-            in_channels=2**min(start_channels_base2 + n_layers - 2, 10), 
+            in_channels=2**(start_channels_base2 + n_layers - 2), 
             time_emb_dim=time_emb_dim, 
             n_groups=n_groups, 
             kernel_size_base2=kernel_size_base2,
@@ -41,7 +41,7 @@ class UNet(nn.Module):
                 kernel_size_base2=kernel_size_base2, 
                 device = device),
             *[DecodeBlock(
-                    in_channels=2**(min(start_channels_base2 + i, 10)),
+                    in_channels=2**(start_channels_base2 + i + 2),
                     time_emb_dim=time_emb_dim, 
                     n_groups=n_groups,
                     kernel_size_base2=kernel_size_base2,

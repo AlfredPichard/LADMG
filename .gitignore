@@ -161,6 +161,7 @@ cython_debug/
 
 #log folder for tensorboard
 log/
+log_backup/
 
 # saved models
 *.pt
@@ -176,3 +177,9 @@ other
 
 #CLAP cache
 *.tmp
+
+#test scripts
+test_*.py
+
+#test audio
+audio_files/
