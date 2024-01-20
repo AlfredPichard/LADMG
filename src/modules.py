@@ -45,17 +45,19 @@ class ConvCLAP(nn.Module):
         return self.activation(self.conv_out(self.conv_in(embedding)))
 
 class AdaGN(nn.Module):
-    def __init__(self, in_channels, time_emb_dim, n_groups=None, dropout_p = 0.3, device='cpu'):
+    def __init__(self, in_channels, time_emb_dim, n_groups=None, dropout_p = 0.5, device='cpu'):
         super(AdaGN, self).__init__()
         if n_groups is None:
             n_groups = in_channels
         self.device = device
 
+        self.p = dropout_p
         self.groupnorm = nn.GroupNorm(n_groups, in_channels, affine=True, eps=1e-5, device=self.device)
         self.lin_time_proj = nn.Linear(time_emb_dim, 2*in_channels, device=self.device)
         self.z_proj = nn.Linear(CLAP.CLAP_DIM, in_channels, device=self.device)
-        self.batch_dropout = nn.Dropout(p = dropout_p)
+        self.batch_dropout = nn.Dropout(p = self.p)
         self.in_channels = in_channels
+        self.activation = nn.SiLU()
 
     def forward(self, x, pos_enc, z_cond):
         '''
@@ -71,15 +73,26 @@ class AdaGN(nn.Module):
         t_a, t_b : (N, C, D)
         return : (N, C, D)
         '''
-        t = self.lin_time_proj(pos_enc).unsqueeze(2).repeat(1,1,x.shape[-1])
+        t = self.activation(self.lin_time_proj(pos_enc).unsqueeze(2).repeat(1,1,x.shape[-1]))
         t_a, t_b = t[:,:self.in_channels,:], t[:,self.in_channels:,:]
         if z_cond is None:
-            z_cond = torch.zeros((x.shape[0], CLAP.CLAP_DIM))
+            z_cond = torch.zeros((x.shape[0], CLAP.CLAP_DIM), device=self.device)
         else:
-            batch_mask = torch.unsqueeze(self.batch_dropout(torch.ones(z_cond.shape[0], requires_grad=False)), 1)
+            batch_mask = torch.rand(x.shape[0], device=self.device)
+            batch_mask =(batch_mask > self.p).int()/(1 - self.p)
+            batch_mask = batch_mask.unsqueeze(1).repeat(1, CLAP.CLAP_DIM)
             z_cond = batch_mask * z_cond
-        z_cond = self.z_proj(z_cond).unsqueeze(2).repeat(1,1,x.shape[-1])
-        return z_cond * (t_a*self.groupnorm(x) + t_b)
+            '''
+            batch_mask = torch.unsqueeze(self.batch_dropout(torch.ones(z_cond.shape[0], requires_grad=False, device=self.device)), 1)
+            print(batch_mask)
+            z_cond = batch_mask * z_cond
+            print(z_cond)
+            '''
+        z_cond = self.activation(self.z_proj(z_cond)).unsqueeze(2).repeat(1,1,x.shape[-1])
+        #z_cond = self.activation(self.z_proj(z_cond)).unsqueeze(2).repeat(1,1,x.shape[-1])
+        out =  z_cond * (t_a*self.groupnorm(x) + t_b)
+        #print(out[:2, :4, :4])
+        return out
 
 
 
