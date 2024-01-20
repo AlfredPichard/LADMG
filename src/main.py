@@ -32,7 +32,7 @@ if __name__ == "__main__":
     tm = utils.TrainingManager()
     optimizer = tm.get_optimizer(model)
 
-    trainer = train.Trainer(model, cm, optimizer, loss, train_dataloader, valid_dataloader, parser.args.condition)
+    trainer = train.Trainer(model, cm, optimizer, loss, train_dataloader, valid_dataloader, parser.args.condition, parser.args.save_epoch, device = cm.DEVICE)
 
     ### Print model summary
     model_summary = summary(model, input_size=((batch, 128, 512) ,(batch,1,1)))
@@ -50,18 +50,28 @@ if __name__ == "__main__":
         if parser.args.epochs:
             for i in range(parser.args.epochs):
                 log = (trainer.epoch == parser.args.epochs_log)
+                model.train()
                 trainer.train_one_epoch(log = True)
                 if log:
+                    model.eval()
                     trainer.validate()
+                if ((trainer.epoch + 1) % trainer.epoch_save == 0):
+                    print('Automatically saving checkpoint...')
+                    trainer.checkpoint(delete_last = True)
             print('Training stopping, saving model')
             trainer.checkpoint()
             sys.exit()
         else:
             while True:
                 log = ((trainer.epoch + 1) % parser.args.epochs_log == 0 and trainer.epoch > 0)
+                model.train()
                 trainer.train_one_epoch(log = True)
                 if log:
+                    model.eval()
                     trainer.validate()
+                if ((trainer.epoch + 1) % trainer.epoch_save == 0):
+                    print('Automatically saving checkpoint...')
+                    trainer.checkpoint(delete_last = True)
     except KeyboardInterrupt:
         print('Training stopping, saving model')
         trainer.checkpoint()

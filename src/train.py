@@ -2,12 +2,11 @@ import torch
 from torch.utils.tensorboard import SummaryWriter
 import utils
 import numpy as np
+import os
 
 class Trainer:
 
-    DEVICE = 'cuda:2'
-
-    def __init__(self, model, manager, optimizer, loss_function, train_dataloader, valid_dataloader, condition):
+    def __init__(self, model, manager, optimizer, loss_function, train_dataloader, valid_dataloader, condition, epoch_save, device = 'cpu'):
         self.model = model
         self.manager = manager
         self.optimizer = optimizer
@@ -19,7 +18,10 @@ class Trainer:
         self.logger.flush()
         self.logger.close()"""
         self.epoch = 0
+        self.epoch_save = epoch_save
         self.condition = condition
+        self.last_name = None
+        self.DEVICE = device
 
     def train_one_epoch(self, log = True):
         running_loss = 0.0
@@ -93,10 +95,13 @@ class Trainer:
         self.logger.flush()
         self.logger.close()
 
-    def checkpoint(self):
+    def checkpoint(self, delete_last = False):
         name = self.manager.model_path + "_epoch" + str(self.epoch)
         #name = self.manager.name
         utils.save_checkpoint(self.model, name)
+        if delete_last and self.last_name:
+            utils.remove_checkpoint(self.last_name)
+        self.last_name = name
 
     def load(self, model_path):
         print(f'Loading from {model_path}')

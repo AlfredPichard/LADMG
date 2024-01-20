@@ -12,6 +12,15 @@ def save_checkpoint(model, model_path):
     torch.save(obj=model.state_dict(),
              f=model_path)
     
+def remove_checkpoint(model_path):
+    model_path = model_path + ".pt"
+    #model_path = os.path.join(dir_path, model_path)
+    if os.path.exists(model_path):
+        os.remove(model_path)
+        print('Checkpoint updated')
+    else:
+        print("Unable to remove outdated checkpoint")
+
 def load_checkpoint(model, model_path):
     model.load_state_dict(torch.load(model_path))
 
@@ -26,7 +35,7 @@ class CheckPointManager:
     CONFIG_FILE = os.path.join(REP + "/config/models.json")
     SAVE_MODEL_DIR = os.path.join(REP + "/saved_models")
     LOG_DIR = os.path.join(REP + "/log")
-    DEVICE = torch.device("cuda:2")
+    DEVICE = torch.device("cuda:1")
 
     def __init__(self, name = None, last_checkpoint = False, condition=False):
         '''
@@ -49,9 +58,9 @@ class CheckPointManager:
             except:
                 # If no configuration corresponds, return first configuration (which is default configuration)
                 if condition:
-                    self.config = data[0]
-                else:
                     self.config = data[1]
+                else:
+                    self.config = data[0]
         f.close()
 
         last_file, last_iter = self.get_last_checkpoint()
@@ -168,6 +177,7 @@ class Parser:
     # Default values
     EPOCHS = None
     LOG_EPOCHS = 10
+    SAVE_EPOCHS = 100
     MODEL = None
     TRAINING = 'default'
     BATCH = 16
@@ -178,6 +188,7 @@ class Parser:
         self.parser.add_argument('-c', '--checkpoint', required=False, dest='checkpoint', action='store_const', const=True, default=False, help='If possible start training from last checkpoint')
         self.parser.add_argument('-e', '--epochs', type=int, default=self.EPOCHS, dest='epochs', required=False, nargs='?', help='Specify training epochs, default is infinite')
         self.parser.add_argument('-l', '--log', type=int, default=self.LOG_EPOCHS, dest='epochs_log', required=False, nargs='?', help=f'Specify after how many epochs to log, default is {self.LOG_EPOCHS}')
+        self.parser.add_argument('-s', '--save', type=int, default=self.SAVE_EPOCHS, dest='save_epoch', required=False, nargs='?', help=f'Specify after how many epochs to save model checkpoint, default is {self.LOG_EPOCHS}')
         self.parser.add_argument('-m', '--model', type=str, default=self.MODEL, dest='model', required=False, nargs='?', help='Model configuration to load')
         self.parser.add_argument('-t', '--training', type=str, default=self.TRAINING, dest='train', required=False, nargs='?', help='Training configuration to load')
         self.parser.add_argument('-b', '--batch', type=int, default=self.BATCH, dest='batch', required=False, nargs='?', help='Training batch size')
