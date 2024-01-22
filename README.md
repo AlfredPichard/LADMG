@@ -26,7 +26,7 @@ To get a learnable representation of rhythm, we use a beat-tracking information 
 
 #### Generated loops without bpm conditioning
 
-<audio src="resources/audios/generated_1_no_bpm.wav" title="N0_BPM"></audio>
+<audio src="resources/audios/generated_1_no_bpm.m4a" controls title="N0_BPM"></audio>
 
 #### Generated loops with bpm conditioning 
 
