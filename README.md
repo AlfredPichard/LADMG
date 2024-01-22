@@ -1,5 +1,7 @@
 # Latent audio diffusion for music generation with expressive control
-    Alfred Pichard, HugoAusa, Paul Triana, Tom Oviste
+    Alfred Pichard, Hugo Audas, Paul Triana, Tom Oviste
+[Web Page](https://alfredpichard.github.io/LADMG/)  
+[Project on Github](https://github.com/AlfredPichard/LADMG)
 
 ## Introduction
 Recent advances in generative deep learning models provide exciting new tools for music generation. In particular, the conditioning capabilities of diffusion models offer interesting possibilities to add expressive control to the generation process, which helps make it a more accessible tool. 
@@ -35,8 +37,8 @@ To get a learnable representation of rhythm, we use a beat-tracking information 
 <audio src="resources/audios/generated_audio_9_122bpm.m4a" controls title="122_BPM_2"></audio>
 
 - 125 BPM : 
-<audio src="resources/audios/generated_audio_3_125bpm.m4a" controls title="125_BPM_1"></audio>
-<audio src="resources/audios/generated_audio_6_125bpm.m4a" controls title="125_BPM_2"></audio>
+<audio src="resources/audios/generated_audio_6_125bpm.m4a" controls title="125_BPM_1"></audio>
+<audio src="resources/audios/generated_audio_7_125bpm.m4a" controls title="125_BPM_2"></audio>
 
 - 128 BPM :
 <audio src="resources/audios/generated_audio_4_128bpm.m4a" controls title="128_BPM_1"></audio>
