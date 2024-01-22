@@ -4,21 +4,21 @@
 ## Introduction
 Recent advances in generative deep learning models provide exciting new tools for music generation. In particular, the conditioning capabilities of diffusion models offer interesting possibilities to add expressive control to the generation process, which helps make it a more accessible tool. 
 
-In this project, we apply the novel diffusion method Iterative $\alpha$-(de)Blending[HBC23](https://arxiv.org/abs/2305.03486), which simplifies the usual formalism of stochastic diffusion models to a deterministic one, so as to generate audio loops from pure noise. We use the EnCodec[DCSA20](https://arxiv.org/abs/2210.13438) high fidelity neural autoencoder to generate latent codes of a compressed audio representation. Conditioning is applied using either beats-per-minute information or high-level audio concepts, and reinforced using classifier-free guidance[HS22](https://arxiv.org/abs/2207.12598). The latent codes are then inverted back to a waveform with the decoder. 
+In this project, we apply the novel diffusion method Iterative $\alpha$-(de)Blending [HBC23](https://arxiv.org/abs/2305.03486), which simplifies the usual formalism of stochastic diffusion models to a deterministic one, so as to generate audio loops from pure noise. We use the EnCodec [DCSA20](https://arxiv.org/abs/2210.13438) high fidelity neural autoencoder to generate latent codes of a compressed audio representation. Conditioning is applied using either beats-per-minute information or high-level audio concepts, and reinforced using classifier-free guidance [HS22](https://arxiv.org/abs/2207.12598). The latent codes are then inverted back to a waveform with the decoder. 
 
 Finally, we assess the quality of our method on a large dataset of minimal house and techno music.
 
 ## Architecture
 The project is currently composed of 3 independant branches, which aim to be merged in the future into a single main one. Each branch corresponds to a different approach of conditioning we decided to apply, but share a common base :
-  - We rely on EnCodec[DCSA20](https://arxiv.org/abs/2210.13438) Encoder/Decoder, trained on our dataset to train our model with the latent representation of our preferred audio dataset in a lighter format.
-  - We use a UNet architecture for our Iterative $\alpha$-(de)Blending process[HBC23](https://arxiv.org/abs/2305.03486).
+  - We rely on EnCodec [DCSA20](https://arxiv.org/abs/2210.13438) Encoder/Decoder, trained on our dataset to train our model with the latent representation of our preferred audio dataset in a lighter format.
+  - We use a UNet architecture for our Iterative $\alpha$-(de)Blending process [HBC23](https://arxiv.org/abs/2305.03486).
   
 ![UNet architecture png](resources/figures/UNet.png)
 
 (See code contained in ’/src’ for further details on each module)
 
 ## Conditioning
-Conditioning is applied separately in the corresponding branches with CLAP[WCZ+23](https://arxiv.org/abs/2211.06687) ([branch link](https://github.com/AlfredPichard/LADMG/tree/clap)) and a beat-per-minute audio descriptor ([branch link](https://github.com/AlfredPichard/LADMG/tree/bpm_conditioning))
+Conditioning is applied separately in the corresponding branches with CLAP [WCZ+23](https://arxiv.org/abs/2211.06687) ([branch link](https://github.com/AlfredPichard/LADMG/tree/clap)) and a beat-per-minute audio descriptor ([branch link](https://github.com/AlfredPichard/LADMG/tree/bpm_conditioning))
 
 ## Results
 ### BPM
@@ -26,21 +26,21 @@ To get a learnable representation of rhythm, we use a beat-tracking information 
 
 #### Generated loops without bpm conditioning
 
-<audio src="resources/audios/generated_1_no_bpm.wav" controls title="N0_BPM"></audio>
+<audio src="resources/audios/generated_1_no_bpm.wav" title="N0_BPM"></audio>
 
 #### Generated loops with bpm conditioning 
 
 - 122 BPM :
-<audio src="resources/audios/generated_audio_1_122bpm.wav" controls title="122_BPM_1"></audio>
-<audio src="resources/audios/generated_audio_9_122bpm.wav" controls title="122_BPM_2"></audio>
+<audio src="resources/audios/generated_audio_1_122bpm.wav" title="122_BPM_1"></audio>
+<audio src="resources/audios/generated_audio_9_122bpm.wav" title="122_BPM_2"></audio>
 
 - 125 BPM : 
-<audio src="resources/audios/generated_audio_3_125bpm.wav" controls title="125_BPM_1"></audio>
-<audio src="resources/audios/generated_audio_6_125bpm.wav" controls title="125_BPM_2"></audio>
+<audio src="resources/audios/generated_audio_3_125bpm.wav" title="125_BPM_1"></audio>
+<audio src="resources/audios/generated_audio_6_125bpm.wav" title="125_BPM_2"></audio>
 
 - 128 BPM :
-<audio src="resources/audios/generated_audio_4_128bpm.wav" controls title="128_BPM_1"></audio>
-<audio src="resources/audios/generated_audio_5_128bpm.wav" controls title="128_BPM_2"></audio>
+<audio src="resources/audios/generated_audio_4_128bpm.wav" title="128_BPM_1"></audio>
+<audio src="resources/audios/generated_audio_5_128bpm.wav" title="128_BPM_2"></audio>
 
 
 ### CLAP
