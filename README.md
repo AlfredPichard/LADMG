@@ -1,5 +1,7 @@
 # Latent audio diffusion for music generation with expressive control
     Alfred Pichard, Hugo Audas, Paul Triana, Tom Oviste
+
+
 [Web Page](https://alfredpichard.github.io/LADMG/)  
 [Project on Github](https://github.com/AlfredPichard/LADMG)
 
