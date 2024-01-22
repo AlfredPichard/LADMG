@@ -26,19 +26,30 @@ To get a learnable representation of rhythm, we use a beat-tracking information 
 
 #### Generated loops without bpm conditioning
 
+[N0_BPM](resources/audios/generated_1_no_bpm.mov)
 <audio src="resources/audios/generated_1_no_bpm.wav" title="N0_BPM"></audio>
 
 #### Generated loops with bpm conditioning 
 
 - 122 BPM :
+[122_BPM_1](resources/audios/generated_audio_1_122bpm.mov)
+[122_BPM_2](resources/audios/generated_audio_9_122bpm.mov)
+
 <audio src="resources/audios/generated_audio_1_122bpm.wav" title="122_BPM_1"></audio>
 <audio src="resources/audios/generated_audio_9_122bpm.wav" title="122_BPM_2"></audio>
 
 - 125 BPM : 
+
+[125_BPM_1](resources/audios/generated_audio_3_125bpm.mov)
+[125_BPM_2](resources/audios/generated_audio_6_125bpm.mov)
+
 <audio src="resources/audios/generated_audio_3_125bpm.wav" title="125_BPM_1"></audio>
 <audio src="resources/audios/generated_audio_6_125bpm.wav" title="125_BPM_2"></audio>
 
 - 128 BPM :
+
+[128_BPM_1](resources/audios/generated_audio_4_128bpm.mov)
+[128_BPM_2](resources/audios/generated_audio_5_128bpm.mov)
 <audio src="resources/audios/generated_audio_4_128bpm.wav" title="128_BPM_1"></audio>
 <audio src="resources/audios/generated_audio_5_128bpm.wav" title="128_BPM_2"></audio>
 
