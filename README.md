@@ -50,6 +50,11 @@ To get a learnable representation of rhythm, we use a beat-tracking information 
 ### CLAP
 When training the model on conditioning with CLAP latent codes, the model learns to map the CLAP dual-modal latent space to the EnCodec latent space. Because EnCodec has both an encoder and a decoder, the combined process of deblending and decoding can be viewed as a decoder for the CLAP latent space. This can be used as a text-to-music process or can be very useful for applying transformations directly in the CLAP latent space.
 
+- Original Audio
+<audio src="resources/audios/original_audio_clap.m4a" controls title="Original"></audio>
+
+- Generated Audio Conditioned on CLAP
+<audio src="resources/audios/generated_audio_clap.m4a" controls title="CLAP"></audio>
 
 ## References
  - [HBC23](https://arxiv.org/abs/2305.03486) Eric Heitz, Laurent Belcour, and Thomas Chambon. Iterative alpha-(de)blending: a minimalist deterministic diffusion model. arXiv preprint arXiv:2305.03486, 2023.
