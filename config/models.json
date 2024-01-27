@@ -10,5 +10,18 @@
             "kernel_size_base2": 1,
             "n_groups": null
         }
+    },
+    {
+        "name": "diff_unet_bt_conditioning_encodec_24",
+        "model": "UNetDiffusion",
+        "loss": "MSE",
+        "args": {
+            "n_layers": 4,
+            "time_emb_dim": 64,
+            "start_channels_base2": 8,
+            "kernel_size_base2": 1,
+            "n_groups": null,
+            "inference_bpm": 128
+        }
     }
 ]

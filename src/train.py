@@ -2,6 +2,7 @@ import torch
 from torch.utils.tensorboard import SummaryWriter
 import utils
 import numpy as np
+import dataset as ds
 
 class Trainer:
 
@@ -24,12 +25,18 @@ class Trainer:
         running_loss = 0.0
         batch_size = self.train_dataloader.batch_size
         for i, data in enumerate(self.train_dataloader):
+            metadata = data['metadata']
+            numpy_bt_conditioner = self.batch_dropout(
+                batch_size=batch_size, 
+                dropout_p=0.17,
+                data=np.array([ds.phasor(metadata[k]['BT_beat']) for k in range(batch_size)]))
+            bt_conditioner = torch.from_numpy(numpy_bt_conditioner)[:,None,:].float().to(self.DEVICE)         
             z_1 = data['encodec'].to(self.DEVICE)
-            a = torch.rand((batch_size)).view(batch_size, 1, 1).to(self.DEVICE)
-            z_0 = self.model.sample(batch_size, z_1.shape[-1]).to(self.DEVICE)
+            a = torch.rand((batch_size), device=self.DEVICE).view(batch_size, 1, 1)
+            z_0 = self.model.sample(batch_size, z_1.shape[-1])
             z_a = ((1 - a)*z_0 + a*z_1)
 
-            diff_pred = self.model(z_a, a)
+            diff_pred = self.model(z_a, a, bt_conditioner)
             real_diff = z_1 - z_0
             loss = self.loss_function(diff_pred, real_diff)
 
@@ -53,13 +60,17 @@ class Trainer:
         running_loss = 0.0
         batch_size = self.valid_dataloader.batch_size
         for i, data in enumerate(self.valid_dataloader):
+            metadata = data['metadata']
+            bt_conditioner = torch.from_numpy(np.array([ds.phasor(metadata[k]['BT_beat']) for k in range(batch_size)]))[:,None,:].float().to(self.DEVICE)
             z_1 = data['encodec'].to(self.DEVICE)
-            a = torch.rand((batch_size)).view(batch_size, 1, 1).to(self.DEVICE)
-            z_0 = self.model.sample(batch_size, z_1.shape[-1]).to(self.DEVICE)
+            a = torch.rand((batch_size), device=self.DEVICE).view(batch_size, 1, 1)
+            z_0 = self.model.sample(batch_size, z_1.shape[-1])
             z_a = ((1 - a)*z_0 + a*z_1)
-            diff_pred = self.model(z_a, a)
+            
+            diff_pred = self.model(z_a, a, bt_conditioner)
             real_diff = z_1 - z_0
             loss = self.loss_function(diff_pred, real_diff)
+            
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
@@ -85,14 +96,23 @@ class Trainer:
         print(f'Loading from {model_path}')
         utils.load_checkpoint(self.model, model_path)
 
+    def batch_dropout(self, batch_size, dropout_p, data):
+        index = np.random.randint(batch_size)
+        u = np.random.random()
+        if u < dropout_p:
+            data[index] = -1*np.ones(data[index].shape)
+
+        return data
+
+
 if __name__ == "__main__":
 
     import dataset as ds
 
-    path = "/data/atiam/triana/data/"
-    dataset = ds.SimpleDataset(path=path, keys = ["encodec","metadata","clap"])
+    path = "/data/nils/minimal/encodec_24k_BT"
+    dataset = ds.SimpleDataset(path=path, keys = ["encodec","metadata"])
 
-    batch = 1
+    batch = 16
 
     train_dataset, valid_dataset= torch.utils.data.random_split(dataset, [0.8, 0.2])
     train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size = batch, shuffle = True, collate_fn = ds.collate_fn_padd)
@@ -108,12 +128,12 @@ if __name__ == "__main__":
 
     trainer = Trainer(model, cm, optimizer, loss, None, None)
 
-    if cm.last_checkpoint:
-        trainer.load(cm.last_file)
-
-    d = next(iter(train_dataloader))
-    z = d["encodec"]
+    data = next(iter(train_dataloader))
+    z = data["encodec"]
+    metadata = data['metadata']
+    bt_conditioner = torch.from_numpy(np.array([ds.phasor(metadata[k]['BT_beat']) for k in range(batch_size)]))[:,None,:].float()
     print(z.shape)
+    print(bt_conditioner.shape)
     t = torch.rand((batch))
-    z_pred = model.forward(z, t)
+    z_pred = model.forward(z, t, bt_conditioner)
     print(z_pred.shape)

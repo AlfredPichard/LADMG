@@ -11,7 +11,11 @@ if __name__ == "__main__":
     ### Initalization
     print("Initializing params...")
     parser = utils.Parser()
-    cm = utils.CheckPointManager(name = parser.args.model, last_checkpoint=parser.args.checkpoint)
+    cm = utils.CheckPointManager(
+        name=parser.args.model, 
+        last_checkpoint=parser.args.checkpoint, 
+        use_bt_conditioning=parser.args.use_bt_conditioning
+    )
     tm = utils.TrainingManager(name = parser.args.train)
     model = cm.get_model()
     loss = cm.get_loss()
@@ -19,9 +23,10 @@ if __name__ == "__main__":
     optimizer = tm.get_optimizer(model)
     trainer = train.Trainer(model, cm, optimizer, loss, None, None)
     
-    dataset = ds.SimpleDataset(path=DATA_PATH, keys=['encodec'], transforms=None, readonly=True)
+    dataset = ds.SimpleDataset(path=DATA_PATH, keys=['encodec', 'metadata'], transforms=None, readonly=True)
 
     batch = parser.args.batch
+    save_checkpoint_epochs = parser.args.save_checkpoint_epochs
 
     train_dataset, valid_dataset= torch.utils.data.random_split(dataset, [0.8, 0.2])
     train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size = batch, shuffle = True, collate_fn = ds.collate_fn_padd, drop_last=True)
@@ -33,7 +38,7 @@ if __name__ == "__main__":
     trainer = train.Trainer(model, cm, optimizer, loss, train_dataloader, valid_dataloader)
 
     ### Print model summary
-    model_summary = summary(model, input_size=((batch, 128, 512) ,(batch,1,1)))
+    model_summary = summary(model, input_size=((batch, 128, 1024), (batch, 1, 1), (batch, 1, 1024)))
     print(f"Model Summary : {model_summary}")
 
     ### Load last model state
@@ -51,6 +56,9 @@ if __name__ == "__main__":
                 trainer.train_one_epoch(log = True)
                 if log:
                     trainer.validate()
+                if trainer.epoch % save_checkpoint_epochs == 0:
+                    print("Autosaving checkpoint...")
+                    trainer.checkpoint()
             print('Training stopping, saving model')
             trainer.checkpoint()
             sys.exit()
@@ -60,6 +68,9 @@ if __name__ == "__main__":
                 trainer.train_one_epoch(log = True)
                 if log:
                     trainer.validate()
+                if trainer.epoch % save_checkpoint_epochs == 0:
+                    print("Autosaving checkpoint...")
+                    trainer.checkpoint()
     except KeyboardInterrupt:
         print('Training stopping, saving model')
         trainer.checkpoint()
